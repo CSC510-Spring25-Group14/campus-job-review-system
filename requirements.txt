@@ -8,7 +8,7 @@ Flask_WTF==1.0.1
 SQLAlchemy==1.4.36
 WTForms==3.0.1
 apscheduler==3.8.1
-requests==2.26.0
+requests>=2.26.0
 beautifulsoup4==4.10.0
 flask-socketio==5.3.0
 pytest==7.0.0
