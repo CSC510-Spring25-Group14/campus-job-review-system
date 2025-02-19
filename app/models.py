@@ -139,6 +139,16 @@ class JobExperience(db.Model):
     def __repr__(self):
         return f"<JobExperience {self.job_title} at {self.company_name} | Skills: {self.skills}>"
 
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'job_title': self.job_title,
+            'company_name': self.company_name,
+            'duration': self.duration,
+            'description': self.description,
+            'skills': self.skills,
+            'username': self.username 
+        }
 
 class Meetings(db.Model):
     """Model to store meeting information"""
