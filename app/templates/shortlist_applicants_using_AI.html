@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+    <h2 class="mt-4">Applications for {{ posting.jobTitle }}</h2>
+    <p><strong>Location:</strong> {{ posting.jobLocation }}</p>
+    <p><strong>Description:</strong> {{ posting.jobDescription }}</p>
+
+    <style>
+        /* Styling for table text */
+        table th, table td {
+            color: white;
+            background-color: #343a40; /* Dark background for contrast */
+        }
+
+        table th {
+            font-weight: bold;
+        }
+
+        table {
+            border: 1px solid white; /* Optional for better visibility */
+        }
+    </style>
+
+    {% if application_user_profiles %}
+    <table class="table table-bordered mt-4">
+        <thead>
+            <tr>
+                <th>Applicant</th>
+                <th>Email</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for applicant in application_user_profiles %}
+            <tr>
+                <td>{{ applicant.username }}</td>
+                <td>{{ applicant.description }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        <p class="mt-4 text-center">No applicants found for this job posting.</p>
+    {% endif %}
+</div>
+{% endblock content %}

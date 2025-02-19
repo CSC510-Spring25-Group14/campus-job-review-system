@@ -5,6 +5,10 @@
     <p><strong>Location:</strong> {{ posting.jobLocation }}</p>
     <p><strong>Description:</strong> {{ posting.jobDescription }}</p>
 
+    <form method="GET" action="{{ url_for('recommend_applicants', posting_id=posting.postingId) }}">
+        <button type="submit" class="btn btn-primary">Shortlist Top 5 using AI</button>
+    </form>
+
     <style>
         /* Styling for table text */
         table th, table td {
