@@ -312,6 +312,60 @@ def get_applications(posting_id):
         application_user_profiles=application_user_profiles,
     )
 
+@app.route("/recruiter/recommend/<int:posting_id>",methods=["GET"])
+@login_required
+def recommend_applicants(posting_id):
+    """
+    Recommend Top 5 applicants from the incoming applicants for a specific job posting.
+    """
+    # Ensure the recruiter owns the posting
+    posting = Recruiter_Postings.query.filter_by(
+        postingId=posting_id, recruiterId=current_user.id
+    ).first_or_404()
+
+    # Fetch all applications for this posting
+    applications = PostingApplications.query.filter_by(postingId=posting_id).all()
+
+    # Create a list of user profiles associated with the applications
+    application_user_profiles = []
+    for application in applications:
+        applicant = User.query.filter_by(id=application.applicantId).first()
+        if applicant:
+            # Retrieve all the experiences of the applicant
+            experiences = JobExperience.query.filter_by(username=applicant.username).all()
+
+            # Convert all those experiences as dictionaries
+            experience_list = [exp.to_dict() for exp in experiences]
+
+            # One dict which combines all the experiences of an applicant.
+            experience_summary = {}
+            
+            # Combine all experiences into experience_summary
+            for d in experience_list:
+                for key, value in d.items():
+                    if key in experience_summary:
+                        if key in ['username']:
+                            continue
+                        elif isinstance(experience_summary[key], list):
+                            experience_summary[key].append(value)
+                        else:
+                            experience_summary[key] = [experience_summary[key], value]  # Convert to list if first encounter
+                    else:
+                        if key in ['username'] or type(value) is list:
+                            experience_summary[key] = value
+                        else:
+                            experience_summary[key] = [value]
+
+            # Append the current applicant's experience summary in the list of summaries
+            application_user_profiles.append(experience_summary)
+
+    # Pass the posting and the applicants to the template
+    return render_template(
+        "shortlist_applicants_using_AI.html",
+        posting=posting,
+        application_user_profiles=application_user_profiles
+    )
+
 @app.route("/applicant_profile/<string:applicant_username>", methods=["GET"])
 @login_required
 def get_applicant(applicant_username):
