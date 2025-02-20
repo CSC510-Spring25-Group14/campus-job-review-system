@@ -6,6 +6,7 @@ from app.models import Meetings, Reviews, User, JobApplication, Recruiter_Postin
 
 from app.forms import RegistrationForm, LoginForm, ReviewForm, JobApplicationForm, PostingForm
 from datetime import datetime
+from app.util import extract_experience_summary
 
 app.config["SECRET_KEY"] = "5791628bb0b13ce0c676dfde280ba245"
 
@@ -331,30 +332,7 @@ def recommend_applicants(posting_id):
     for application in applications:
         applicant = User.query.filter_by(id=application.applicantId).first()
         if applicant:
-            # Retrieve all the experiences of the applicant
-            experiences = JobExperience.query.filter_by(username=applicant.username).all()
-
-            # Convert all those experiences as dictionaries
-            experience_list = [exp.to_dict() for exp in experiences]
-
-            # One dict which combines all the experiences of an applicant.
-            experience_summary = {}
-            
-            # Combine all experiences into experience_summary
-            for d in experience_list:
-                for key, value in d.items():
-                    if key in experience_summary:
-                        if key in ['username']:
-                            continue
-                        elif isinstance(experience_summary[key], list):
-                            experience_summary[key].append(value)
-                        else:
-                            experience_summary[key] = [experience_summary[key], value]  # Convert to list if first encounter
-                    else:
-                        if key in ['username'] or type(value) is list:
-                            experience_summary[key] = value
-                        else:
-                            experience_summary[key] = [value]
+            experience_summary = extract_experience_summary(applicant)
 
             # Append the current applicant's experience summary in the list of summaries
             application_user_profiles.append(experience_summary)
