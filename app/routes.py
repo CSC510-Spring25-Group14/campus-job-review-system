@@ -3,6 +3,7 @@ from flask_login import login_user, current_user, logout_user, login_required
 from app.services.job_fetcher import fetch_job_listings
 from app import app, db, bcrypt
 from app.models import Meetings, Reviews, User, JobApplication, Recruiter_Postings, PostingApplications, JobExperience
+from app.util import extract_experience_summary
 
 from app.forms import RegistrationForm, LoginForm, ReviewForm, JobApplicationForm, PostingForm
 from datetime import datetime
@@ -664,3 +665,21 @@ def search_candidates():
 
     return render_template('search_candidates.html', job_experiences=job_experiences)
 
+@app.route('/learning', methods=['GET', 'POST'])
+@login_required
+def learning():
+    """
+    Recommend Learning content to upskill the current user.
+    """
+    applicant = User.query.filter_by(id=current_user.id).first()
+    
+    if applicant:
+        # Extract the profile summary
+        profile_summary = extract_experience_summary(applicant)
+
+        return render_template("learning.html",
+            profile_summary=profile_summary
+        )
+    else:
+        flash("Unknown error. Please try again later.", "danger")
+        return redirect(url_for("home"))
