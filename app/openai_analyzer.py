@@ -11,19 +11,21 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 load_dotenv()
 
-embed_function = SentenceTransformer("all-MiniLM-L6-v2")
-tokenizer = embed_function.tokenizer 
-if tokenizer.pad_token is None:
-    tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+embedding_model = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
-def split_text(text, max_length=1024):
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=max_length,
-        chunk_overlap=100, 
-        separators=["\n\n", "\n", " ", "."]  
-    )
-    chunks = text_splitter.split_text(text)
-    return chunks
+def embed_function(texts):
+    if isinstance(texts, str):
+        texts = [texts]
+    return embedding_model.embed_documents(texts)
+
+# def split_text(text, max_length=1024):
+#     text_splitter = RecursiveCharacterTextSplitter(
+#         chunk_size=max_length,
+#         chunk_overlap=100, 
+#         separators=["\n\n", "\n", " ", "."]  
+#     )
+#     chunks = text_splitter.split_text(text)
+#     return chunks
 
 # def generate_analysis(prompt): 
 #     tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -44,24 +46,30 @@ def update_faiss_knowledge_base(new_texts):
 
 
 def analyze_resume(text):
-    tips = []
-    if resume_db:
-        results = resume_db.similarity_search(text, k=3) 
-        tips = [r.page_content if hasattr(r, 'page_content') else str(r) for r in results]
+    text_embedding = np.array(embed_function(text)).reshape(1, -1)
+    
+    results = resume_db.similarity_search_by_vector(text_embedding)
+    tips = [r.page_content for r in results] if results else []
 
-    text_embedding = embed_function.encode([text], convert_to_numpy=True)[0]
+    retrieved_embeddings = []
+    for r in tips:
+        emb = embed_function(r)
+        retrieved_embeddings.append(np.array(emb).reshape(1, -1))
+        
+        
+    similarities = []
+    for emb in retrieved_embeddings:
+        if emb.shape == text_embedding.shape:
+            similarity = cosine_similarity(text_embedding, emb)[0][0]
+            similarities.append(similarity)
+            
+    avg_similarity = np.mean(similarities) if similarities else 0
 
-    retrieved_embeddings = [embed_function.encode(r, convert_to_numpy=True) for r in tips]
-
-    similarities = [cosine_similarity([text_embedding], [emb])[0][0] for emb in retrieved_embeddings]
-
-    avg_similarity = np.mean(similarities) if similarities else 0  # Average similarity score
     metrics = {
-        "similarity_score": round(avg_similarity, 3),  # How close the resume is to top resumes
+        "similarity_score": round(avg_similarity, 3),
         "resume_strength": "Strong" if avg_similarity > 0.75 else "Moderate" if avg_similarity > 0.5 else "Weak"
     }
-
-    # Generate suggestions based on differences with top resumes
+    
     suggestions = []
     if avg_similarity < 0.75:
         suggestions.append("Consider adding more industry-specific keywords.")
@@ -74,8 +82,7 @@ def analyze_resume(text):
 
 try:
     resume_db = FAISS.load_local("knowledge_base", embed_function, allow_dangerous_deserialization=True)
-except Exception as e:
-    resume_db = None
-
+except Exception:
     resume_db = FAISS.from_texts([""], embed_function)
     resume_db.save_local("knowledge_base")
+

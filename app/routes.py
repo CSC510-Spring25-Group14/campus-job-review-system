@@ -415,20 +415,25 @@ def download_resume(filename):
     resume_folder = os.path.join(current_app.root_path, "uploads", "resume")
     return send_from_directory(resume_folder, filename)
 
-@app.route('/resume_analytics')
+@app.route('/resume_analytics', methods=["GET"])
 @login_required
 def resume_analytics():
     if not current_user.resume:
         flash("No resume uploaded yet.", "warning")
         return redirect(url_for("account"))
     
-    resume_path = os.path.join(app.config["UPLOAD_FOLDER"], current_user.resume)
-    resume_text = text_from_pdf(resume_path)
-    metrics, suggestions = analyze_resume(resume_text)
+    path = os.path.join(app.config["UPLOAD_FOLDER"], current_user.resume)
+    text = text_from_pdf(path)
+    print(type(text))
+    metrics, suggestions = analyze_resume(text)
+    
+    # text = "Resume text"
+    # metrics = ["Metrics"]
+    # suggestions = ["suggestions"]
     
     return render_template(
         'resume_analysis.html',
-        resume_text=resume_text,
+        resume_text=text,
         metrics=metrics,
         suggestions=suggestions
     )
