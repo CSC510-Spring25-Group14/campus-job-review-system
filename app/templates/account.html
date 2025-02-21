@@ -9,39 +9,64 @@
         <h3>User Details</h3>
         <p><strong>Username:</strong> {{ current_user.username }}</p>
         <p><strong>Email:</strong> {{ current_user.email }}</p>
-        <p><strong>Role:</strong> 
+        <p><strong>Role:</strong>
             {% if current_user.is_recruiter %}
-                Recruiter
+            Recruiter
             {% else %}
-                Job Seeker
+            Job Seeker
             {% endif %}
         </p>
     </div>
 
     <div class="mt-4">
+        <h3>Upload Resume</h3>
+
+        {% if current_user.resume %}
+        <p><strong>Uploaded Resume:</strong>
+            <a href="{{ url_for('download_resume', filename=current_user.resume) }}" target="_blank">Download Resume</a>
+        </p>
+        <a href="{{ url_for('resume_analytics') }}" class="btn btn-info">View Resume Content & Analysis</a>
+        {% else %}
+        <p>No resume uploaded yet.</p>
+        {% endif %}
+
+        <form action="{{ url_for('upload_resume') }}" method="post" enctype="multipart/form-data">
+            <input type="file" name="resume" accept=".pdf, .docx" required>
+            <button type="submit" class="btn btn-primary">
+                {% if current_user.resume %} 
+                    Replace Resume
+                {% else %}
+                    Upload Resume
+                {% endif %}
+            </button>
+            <p class="text-muted">Max file size: 100MB</p>
+        </form>
+    </div>
+
+    <div class="mt-4">
         <h3>My Reviews</h3>
         {% if current_user.reviews %}
-            {% for review in current_user.reviews %}
-                <div class="mb-3">
-                    <h4>{{ review.job_title }} ({{ review.department }})</h4>
-                    <p><strong>Location:</strong> {{ review.locations }}</p>
-                    <p><strong>Job Description:</strong> {{ review.job_description }}</p>
-                    <p><strong>Hourly Pay:</strong> {{ review.hourly_pay }}</p>
-                    <p><strong>Benefits:</strong> {{ review.benefits }}</p>
-                    <p><strong>Review:</strong> {{ review.review }}</p>
-                    <p><strong>Rating:</strong> {{ review.rating }}/5</p>
-                    <p><strong>Recommendation:</strong> 
-                        {% if review.recommendation %}
-                            Yes
-                        {% else %}
-                            No
-                        {% endif %}
-                    </p>
-                    <hr>
-                </div>
-            {% endfor %}
+        {% for review in current_user.reviews %}
+        <div class="mb-3">
+            <h4>{{ review.job_title }} ({{ review.department }})</h4>
+            <p><strong>Location:</strong> {{ review.locations }}</p>
+            <p><strong>Job Description:</strong> {{ review.job_description }}</p>
+            <p><strong>Hourly Pay:</strong> {{ review.hourly_pay }}</p>
+            <p><strong>Benefits:</strong> {{ review.benefits }}</p>
+            <p><strong>Review:</strong> {{ review.review }}</p>
+            <p><strong>Rating:</strong> {{ review.rating }}/5</p>
+            <p><strong>Recommendation:</strong>
+                {% if review.recommendation %}
+                Yes
+                {% else %}
+                No
+                {% endif %}
+            </p>
+            <hr>
+        </div>
+        {% endfor %}
         {% else %}
-            <p>No reviews available.</p>
+        <p>No reviews available.</p>
         {% endif %}
     </div>
 

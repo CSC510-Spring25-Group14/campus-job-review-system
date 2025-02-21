@@ -1,9 +1,13 @@
-from flask import render_template, request, redirect, flash, url_for, abort, jsonify
+import os
+from flask import render_template, request, redirect, flash, url_for, abort, jsonify, send_from_directory, current_app
+import pdfplumber
 from flask_login import login_user, current_user, logout_user, login_required
 from app.services.job_fetcher import fetch_job_listings
 from app import app, db, bcrypt
 from app.models import Meetings, Reviews, User, JobApplication, Recruiter_Postings, PostingApplications, JobExperience
-
+from werkzeug.utils import secure_filename
+from app.resume_processor import text_from_pdf
+from app.openai_analyzer import analyze_resume
 from app.forms import RegistrationForm, LoginForm, ReviewForm, JobApplicationForm, PostingForm
 from datetime import datetime
 
@@ -370,6 +374,64 @@ def page_content_post():
 def account():
     return render_template("account.html", title="Account")
 
+UPLOAD_FOLDER = 'app/uploads/resume/'
+ALLOWED_EXTENSIONS = {'pdf'}
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route('/upload_resume', methods=['POST'])
+@login_required
+def upload_resume():
+    if 'resume' not in request.files:
+        flash("No files selected", "danger")
+        return redirect(url_for('account'))
+    
+    file = request.files['resume']
+    
+    if file.filename == '':
+        flash("No selected file", "danger")
+        return redirect(url_for('account'))
+    
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(filepath)
+        current_user.resume = filename
+        db.session.commit()
+
+        flash("Resume uploaded successfully!", "success")
+        return redirect(url_for('account'))
+    
+    flash("Invalid file type. Only PDF and DOCX allowed.", "danger")
+    return redirect(url_for('account'))
+
+@app.route('/uploads/resume/<filename>', methods=["GET"])
+@login_required
+def download_resume(filename):
+    resume_folder = os.path.join(current_app.root_path, "uploads", "resume")
+    return send_from_directory(resume_folder, filename)
+
+@app.route('/resume_analytics')
+@login_required
+def resume_analytics():
+    if not current_user.resume:
+        flash("No resume uploaded yet.", "warning")
+        return redirect(url_for("account"))
+    
+    resume_path = os.path.join(app.config["UPLOAD_FOLDER"], current_user.resume)
+    resume_text = text_from_pdf(resume_path)
+    metrics, suggestions = analyze_resume(resume_text)
+    
+    return render_template(
+        'resume_analysis.html',
+        resume_text=resume_text,
+        metrics=metrics,
+        suggestions=suggestions
+    )
 
 @app.route("/api/jobs", methods=["GET"])
 def get_jobs():
