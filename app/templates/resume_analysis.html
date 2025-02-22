@@ -4,9 +4,6 @@
 <h2>Resume Content</h2>
 <pre>{{ resume_text[:1000] }}{% if resume_text|length > 1000 %}...{% endif %}</pre>
 
-<h2>Resume Metrics</h2>
-<pre>{{ metrics | tojson(indent=2) }}</pre>
-
 <h2>AI-Powered Improvement Suggestions</h2>
 <ul>
     {% for suggestion in suggestions %}
