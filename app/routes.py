@@ -3,7 +3,7 @@ from flask_login import login_user, current_user, logout_user, login_required
 from app.services.job_fetcher import fetch_job_listings
 from app import app, db, bcrypt
 from app.models import Meetings, Reviews, User, JobApplication, Recruiter_Postings, PostingApplications, JobExperience
-from app.util import extract_experience_summary
+from app.util import extract_experience_summary, call_groq_api
 
 from app.forms import RegistrationForm, LoginForm, ReviewForm, JobApplicationForm, PostingForm
 from datetime import datetime
@@ -673,12 +673,18 @@ def learning():
     """
     applicant = User.query.filter_by(id=current_user.id).first()
     
+    import json
+
     if applicant:
         # Extract the profile summary
-        profile_summary = extract_experience_summary(applicant)
+        profile_summary = json.dumps(extract_experience_summary(applicant))
+
+        recommendation = json.loads(call_groq_api("app\\prompts\\learning_prompt_template.txt", profile_summary))
+
+        print(recommendation)
 
         return render_template("learning.html",
-            profile_summary=profile_summary
+            courses=recommendation
         )
     else:
         flash("Unknown error. Please try again later.", "danger")

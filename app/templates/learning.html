@@ -1,27 +1,47 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container">
+<div class="container banner2">
     <h1>Upskill Zone</h1>
+
+    <style>
+        /* Styling for table text */
+        table th, table td {
+            color: white;
+            background-color: #343a40; /* Dark background for contrast */
+        }
+
+        table th {
+            font-weight: bold;
+        }
+
+        table {
+            border: 1px solid white; /* Optional for better visibility */
+        }
+    </style>
 
     <hr>
 
-    <div class="container-fluid banner2 text-center">
-      <h1 class="text-center bold">Part-Time Job Listings</h1>
-      <div class="table-responsive justify-content-between">
-          <table class="table table-striped table-bordered border border-white table-vcenter">
-              <thead class="thead-dark">
-              <tr>
-                  <th scope="col">{{ current_user.id }}</th>
-                  <th scope="col">{{ profile_summary }}</th>
-              </tr>
-              </thead>
-              <tbody id="job-listings" class="text-white tbl-accordion-header">
-              <!-- Dynamic job rows will be inserted here by JavaScript -->
-              </tbody>
-          </table>
-      </div>
-      <br><br>
-  </div>
+    {% if courses %}
+    <table class="table table-bordered mt-4">
+        <thead>
+            <tr>
+                <th>Course</th>
+                <th>URL</th>
+           </tr>
+        </thead>
+        <tbody>
+            {% for course in courses %}
+            <tr>
+                <td>{{ course['title'] }}</td>
+                <td><a href ="{{ course['url'] }}" target="_blank">Click Here</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="mt-4 text-center">No applicants found for this job posting.</p>
+    {% endif %}
+
 </div>
 {% endblock content %}
