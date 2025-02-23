@@ -2,32 +2,43 @@ import re
 import fitz  # PyMuPDF
 
 def clean_extracted_text(text):
-    text = re.sub(r'\s+', ' ', text)  # Replace multiple whitespace characters with a single space
-    text = text.replace('\n', ' ')     # Replace newlines with spaces
-    return text.strip()                 # Remove leading and trailing whitespace
+    text = re.sub(r'\s+', ' ', text)
+    text = text.replace('\n', ' ')
+    return text.strip()
 
 def extract_experience_and_projects_from_pdf(pdf_path):
     resume_text = ""
     with fitz.open(pdf_path) as pdf:
         for page in pdf:
-            resume_text += clean_extracted_text(page.get_text()) + " "  # Clean and add text from each page
+            resume_text += clean_extracted_text(page.get_text()) + " "
 
-    # Define regex patterns to match different section titles
     experience_pattern = r'(?:EXPERIENCE|experience|work experience|employment|professional experience)(.*?)(?=PROJECTS|projects|research projects|academic projects|project work|$)'
     projects_pattern = r'(?:PROJECTS|projects|research projects|academic projects|project work)(.*?)(?=\n\s*\n|\Z)'
 
-    # Find experience section
     experience_match = re.search(experience_pattern, resume_text, re.IGNORECASE | re.DOTALL)
     projects_match = re.search(projects_pattern, resume_text, re.IGNORECASE | re.DOTALL)
 
-    # Extract experience content
-    experience = experience_match.group(1).strip() if experience_match else "No experience section found."
-    
-    # Extract projects content
-    projects = projects_match.group(1).strip() if projects_match else "No projects section found."
+    experience_section = experience_match.group(1).strip() if experience_match else "No experience section found."
+    experiences = [exp.strip() for exp in experience_section.split("•") if exp.strip()]
+
+    projects_section = projects_match.group(1).strip() if projects_match else "No projects section found."
+    project_entries = [proj.strip() for proj in projects_section.split("•") if proj.strip()]
+
+    projects = []
+    current_project = ""
+    for entry in project_entries:
+        if re.match(r'^[A-Z].*', entry):
+            if current_project:
+                projects.append(current_project.strip())
+            current_project = entry
+        else:
+            current_project += " " + entry
+
+    if current_project:
+        projects.append(current_project.strip())
 
     return {
-        "experience": experience,
+        "experience": experiences,
         "projects": projects
     }
 

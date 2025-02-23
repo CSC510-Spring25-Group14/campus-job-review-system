@@ -6,7 +6,7 @@ from app.services.job_fetcher import fetch_job_listings
 from app import app, db, bcrypt
 from app.models import Meetings, Reviews, User, JobApplication, Recruiter_Postings, PostingApplications, JobExperience
 from werkzeug.utils import secure_filename
-from app.resume_processor import text_from_pdf
+from app.resume_processor import extract_experience_and_projects_from_pdf
 from app.llm_analyzer import analyze_resume
 from app.forms import RegistrationForm, LoginForm, ReviewForm, JobApplicationForm, PostingForm
 from datetime import datetime
@@ -423,17 +423,12 @@ def resume_analytics():
         return redirect(url_for("account"))
     
     path = os.path.join(app.config["UPLOAD_FOLDER"], current_user.resume)
-    text = text_from_pdf(path)
-    print(text)
-    suggestions = analyze_resume(text)
-    
-    # text = "Resume text"
-    # metrics = ["Metrics"]
-    # suggestions = ["suggestions"]
-    
+    text = extract_experience_and_projects_from_pdf(path)
+    resume_text = f"Experience: {', '.join(text['experience'])}\n\nProjects: {', '.join(text['projects'])}"
+    suggestions = analyze_resume(resume_text)
+    print(type(suggestions))
     return render_template(
         'resume_analysis.html',
-        resume_text=text,
         suggestions=suggestions
     )
 
