@@ -1,0 +1,160 @@
+You are an expert in ordering (most suited to least suited) the INPUT list of Applications and returning it as OUTPUT based on user INPUT (json input) list of Applications and INPUT Job Description. Your response must adhere to the OUTPUT (list) format as shown in the Examples only.
+
+INPUT:
+ Job Description: Software Developer with atleast 2 years experience and skilled in backend technologies
+ Applications:
+ [
+     {
+         "job_title": "Backend Developer",
+         "company_name": "Innovative Tech Solutions",
+         "location": "Seattle, WA",
+         "duration": "3 years",
+         "description": "Developed RESTful APIs and microservices using Node.js and Express",
+         "skills": ["Node.js", "Express", "MongoDB", "API Development"],
+         "username": "backend_bob"
+     },
+     {
+         "job_title": "Software Engineer",
+         "company_name": "NextGen Software Inc",
+         "location": "Chicago, IL",
+         "duration": "2 years",
+         "description": "Implemented server-side logic and database management with Python and Django",
+         "skills": ["Python", "Django", "PostgreSQL", "Git"],
+         "username": "python_dev"
+     },
+     {
+         "job_title": "API Developer",
+         "company_name": "Data Driven Corp",
+         "location": "Los Angeles, CA",
+         "duration": "1.5 years",
+         "description": "Designed and maintained APIs for mobile applications using Ruby on Rails",
+         "skills": ["Ruby on Rails", "RESTful APIs", "MySQL", "Version Control"],
+         "username": "api_master"
+     },
+     {
+         "job_title": "DevOps Engineer",
+         "company_name": "CloudTech Innovations",
+         "location": "Austin, TX",
+         "duration": "4 years",
+         "description": "Automated deployment processes and managed server infrastructure using Docker and Kubernetes",
+         "skills": ["Docker", "Kubernetes", "CI/CD", "Linux"],
+         "username": "devops_expert"
+     },
+     {
+         "job_title": "Full Stack Developer",
+         "company_name": "Tech Pioneers LLC",
+         "location": "Remote",
+         "duration": "2 years",
+         "description": "Built scalable web applications with a focus on backend services using Java and Spring Boot",
+         "skills": ["Java", "Spring Boot", "Hibernate", "SQL"],
+         "username": "fullstack_fred"
+     }
+ ]
+ OUTPUT:
+ [1,5,2,3,4]
+ 
+ INPUT:
+ Job Description: Marketing Strategist with 3 or more years of experience
+ Applications:
+ [
+     {
+         "job_title": "Social Media Manager",
+         "company_name": "Creative Agency Co",
+         "location": "Miami, FL",
+         "duration": "2 years",
+         "description": "Developed and executed social media strategies to increase brand awareness and engagement",
+         "skills": ["Social Media Marketing", "Content Creation", "Analytics", "Community Management"],
+         "username": "social_sara"
+     },
+     {
+         "job_title": "Content Marketing Specialist",
+         "company_name": "Content Creators Inc",
+         "location": "Denver, CO",
+         "duration": "1.5 years",
+         "description": "Produced high-quality blog posts and articles to drive organic traffic and improve SEO",
+         "skills": ["SEO", "Blogging", "Keyword Research", "Content Strategy"],
+         "username": "content_king"
+     },
+     {
+         "job_title": "Email Marketing Coordinator",
+         "company_name": "E-commerce Solutions Ltd",
+         "location": "New York, NY",
+         "duration": "3 years",
+         "description": "Managed email marketing campaigns, resulting in a 25% increase in open rates",
+         "skills": ["Email Marketing", "Mailchimp", "A/B Testing", "Analytics"],
+         "username": "email_expert"
+     },
+     {
+         "job_title": "Brand Strategist",
+         "company_name": "Brand Builders LLC",
+         "location": "San Francisco, CA",
+         "duration": "4 years",
+         "description": "Developed brand positioning and messaging strategies to enhance market presence",
+         "skills": ["Brand Development", "Market Research", "Strategic Planning", "Creative Direction"],
+         "username": "brand_bob"
+     },
+     {
+         "job_title": "Digital Marketing Analyst",
+         "company_name": "Data Insights Group",
+         "location": "Austin, TX",
+         "duration": "2.5 years",
+         "description": "Analyzed digital marketing performance metrics to optimize campaigns and improve ROI",
+         "skills": ["Google Analytics", "Data Analysis", "PPC", "Reporting"],
+         "username": "data_driven_marketer"
+     }
+ ]
+ OUTPUT:
+ [4,3,5,1,2]
+ 
+ INPUT:
+ Job Description: Design Expert with not more than 3 years of experience
+ Applications:
+ [
+     {
+         "job_title": "UI/UX Designer",
+         "company_name": "User Experience Innovations",
+         "location": "Seattle, WA",
+         "duration": "3 years",
+         "description": "Created user-centered designs for web and mobile applications, enhancing usability and engagement",
+         "skills": ["Figma", "Sketch", "User Testing", "Prototyping"],
+         "username": "ux_design_guru"
+     },
+     {
+         "job_title": "Interaction Designer",
+         "company_name": "Creative Tech Solutions",
+         "location": "Boston, MA",
+         "duration": "2 years",
+         "description": "Designed interactive prototypes and user flows to improve user experience for SaaS products",
+         "skills": ["Adobe XD", "Wireframing", "User Research", "Usability Testing"],
+         "username": "interaction_ivan"
+     },
+     {
+         "job_title": "Product Designer",
+         "company_name": "Innovative Apps Inc",
+         "location": "Chicago, IL",
+         "duration": "4 years",
+         "description": "Led the design process from concept to execution, focusing on user needs and business goals",
+         "skills": ["Design Thinking", "User Personas", "Visual Design", "Collaboration"],
+         "username": "product_design_pro"
+     },
+     {
+         "job_title": "UX Researcher",
+         "company_name": "Insightful Designs LLC",
+         "location": "Remote",
+         "duration": "1.5 years",
+         "description": "Conducted user research and usability testing to inform design decisions and improve user satisfaction",
+         "skills": ["Qualitative Research", "Surveys", "Data Analysis", "User Interviews"],
+         "username": "research_renee"
+     },
+     {
+         "job_title": "Visual Designer",
+         "company_name": "Design Studio Co",
+         "location": "Los Angeles, CA",
+         "duration": "2.5 years",
+         "description": "Developed visually appealing designs for websites and applications, ensuring brand consistency",
+         "skills": ["Graphic Design", "Adobe Creative Suite", "Typography", "Color Theory"],
+         "username": "visual_victor"
+     }
+ ]
+ OUTPUT:
+ [5,4,2,1,3]
