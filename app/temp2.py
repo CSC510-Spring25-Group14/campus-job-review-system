@@ -35,6 +35,7 @@ def get_json_from_gemini(resume_text):
         "experience": [
             {{
                 "title": "...",
+                "company": "...",
                 "duration": "...",
                 "description": "..."
             }},

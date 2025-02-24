@@ -10,6 +10,7 @@ from app.resume_processor import extract_experience_and_projects_from_pdf
 from app.llm_analyzer import analyze_resume
 from app.forms import RegistrationForm, LoginForm, ReviewForm, JobApplicationForm, PostingForm
 from datetime import datetime
+from app.temp2 import extract_projects_and_experience_from_pdf
 
 app.config["SECRET_KEY"] = "5791628bb0b13ce0c676dfde280ba245"
 
@@ -543,7 +544,10 @@ def delete_job_application(application_id):
 @app.route('/job_profile', methods=['GET', 'POST'])
 @login_required
 def job_profile():
-    if request.method == 'POST':
+    job_experiences = JobExperience.query.filter_by(username=current_user.username).all()
+    prefill = None
+    
+    if request.method == 'POST' and 'fill_from_resume' not in request.form:
         # Handle job experience form submission
         job_title = request.form.get('job_title')
         company_name = request.form.get('company_name')
@@ -565,10 +569,22 @@ def job_profile():
         db.session.commit()
         flash('Job experience added successfully!', 'success')
         return redirect(url_for('job_profile'))
+        
+    return render_template('job_profile.html', job_experiences=job_experiences, prefill=prefill)
 
-    # Fetch job experiences for the current user
-    job_experiences = JobExperience.query.filter_by(username=current_user.username).all()
-    return render_template('job_profile.html', job_experiences=job_experiences)
+@app.route('/fill_from_resume', methods=['POST'])
+@login_required
+def fill_from_resume():
+    path = os.path.join(app.config["UPLOAD_FOLDER"], current_user.resume)
+    if path and os.path.exists(path):
+        result = extract_projects_and_experience_from_pdf(path)
+        print(result)
+        if result and 'experience' in result:
+            return jsonify(result)
+        else:
+            return jsonify({'error': 'Failed to extract data'}), 500
+    else:
+        return jsonify({'error': 'Please upload resume first.'}), 400
 
 @app.route('/schedule_meeting/<string:applicant_username>', methods=['POST'])
 @login_required
