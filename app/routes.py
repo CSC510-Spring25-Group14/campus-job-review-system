@@ -6,7 +6,7 @@ from app.models import Meetings, Reviews, User, JobApplication, Recruiter_Postin
 
 from app.forms import RegistrationForm, LoginForm, ReviewForm, JobApplicationForm, PostingForm
 from datetime import datetime
-from app.util import extract_experience_summary
+from app.util import extract_experience_summary, call_groq_api
 
 app.config["SECRET_KEY"] = "5791628bb0b13ce0c676dfde280ba245"
 
@@ -313,12 +313,15 @@ def get_applications(posting_id):
         application_user_profiles=application_user_profiles,
     )
 
-@app.route("/recruiter/recommend/<int:posting_id>",methods=["GET"])
+@app.route("/recruiter/order-applicants/<int:posting_id>",methods=["GET"])
 @login_required
-def recommend_applicants(posting_id):
+def order_applicants(posting_id):
     """
-    Recommend Top 5 applicants from the incoming applicants for a specific job posting.
+    Order applicants from the incoming applicants for a specific job posting.
     """
+
+    import json
+
     # Ensure the recruiter owns the posting
     posting = Recruiter_Postings.query.filter_by(
         postingId=posting_id, recruiterId=current_user.id
@@ -337,11 +340,30 @@ def recommend_applicants(posting_id):
             # Append the current applicant's experience summary in the list of summaries
             application_user_profiles.append(experience_summary)
 
-    # Pass the posting and the applicants to the template
+    print(application_user_profiles)
+
+    # Retrieve the posting details
+    posting_data = posting.getJobDetails()
+    
+    # Form the input prompt
+    input_prompt = "Job Description: " + posting_data['jobDescription'] + " \n " + json.dumps(application_user_profiles) + "\n Just give the output list."
+    
+    # Call GROQ AI API
+    recommended_list = json.loads(call_groq_api("app\\prompts\\order_applicants_template.txt", input_prompt))
+
+    # Reorder the JSONs as per the recommended list
+    n = len(application_user_profiles)
+    ordered_applications = [None] * n
+
+    for i, p in enumerate(recommended_list):
+        ordered_applications[i] = application_user_profiles[p - 1]
+
+
+    # Pass the job description and the ordered applications to the template
     return render_template(
-        "shortlist_applicants_using_AI.html",
-        posting=posting,
-        application_user_profiles=application_user_profiles
+        "order_applicants_using_AI.html",
+        posting=posting_data,
+        applicants=ordered_applications
     )
 
 @app.route("/applicant_profile/<string:applicant_username>", methods=["GET"])
