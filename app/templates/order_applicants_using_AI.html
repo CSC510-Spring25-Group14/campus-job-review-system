@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container banner2">
+    <h2 class="mt-4">Applications for {{ posting.jobTitle }}</h2>
+    <p><strong>Location:</strong> {{ posting.jobLocation }}</p>
+    <p><strong>Description:</strong> {{ posting.jobDescription }}</p>
+    <p><strong>Note: </strong> Applications are ordered <strong>(Most Preferred to Least Preferred)</strong></p>
+    <style>
+        /* Styling for table text */
+        table th, table td {
+            color: white;
+            background-color: #343a40; /* Dark background for contrast */
+        }
+
+        table th {
+            font-weight: bold;
+        }
+
+        table {
+            border: 1px solid white; /* Optional for better visibility */
+        }
+    </style>
+
+    {% if applicants %}
+    <table class="table table-bordered mt-4">
+        <thead>
+            <tr>
+                <th>S.No.</th>
+                <th>Applicant</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for applicant in applicants %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ applicant.username }}</td>
+                <td>
+                    <!-- Form for viewing applicant profile -->
+                    <form method="GET" action="{{ url_for('get_applicant', applicant_username=applicant.username) }}" style="display: inline;">
+                        <button type="submit" class="btn btn-info">View Profile</button>
+                    </form>
+                    
+                    <!-- Form for scheduling a meeting -->
+                    <form method="POST" action="{{ url_for('schedule_meeting', applicant_username=applicant.username) }}" style="display: inline;">
+                        <input type="datetime-local" name="meeting_time" required style="margin-right: 10px;">
+                        <input type="hidden" name="posting_id" value="{{ posting.postingId }}">
+                        <button type="submit" class="btn btn-primary">Schedule Meeting</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        <p class="mt-4 text-center">No applicants found for this job posting.</p>
+    {% endif %}
+</div>
+{% endblock content %}
