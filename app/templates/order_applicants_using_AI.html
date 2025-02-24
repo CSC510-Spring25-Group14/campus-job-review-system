@@ -47,6 +47,13 @@
                         <input type="hidden" name="posting_id" value="{{ posting.postingId }}">
                         <button type="submit" class="btn btn-primary">Schedule Meeting</button>
                     </form>
+
+                    <!-- Form for toggling shortlist -->
+                    <form method="POST" action="{{ url_for('toggle_shortlist', posting_id=posting.postingId, applicant_id=applicant.id) }}">
+                        <button type="submit" class="btn btn-danger">
+                          Shortlist Candidate
+                        </button>
+                    </form>
                 </td>
             </tr>
             {% endfor %}

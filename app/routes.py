@@ -354,10 +354,12 @@ def order_applicants(posting_id):
     # Reorder the JSONs as per the recommended list
     n = len(application_user_profiles)
     ordered_applications = [None] * n
-
     for i, p in enumerate(recommended_list):
         ordered_applications[i] = application_user_profiles[p - 1]
 
+    # Add applicant id in each applicant data. applicant id is needed for "shortlisting candidate" functionality
+    for application in ordered_applications:
+        application['id'] = User.query.filter_by(username=application['username']).first().id
 
     # Pass the job description and the ordered applications to the template
     return render_template(
