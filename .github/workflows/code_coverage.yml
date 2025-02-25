@@ -35,8 +35,15 @@ jobs:
       - name: Run code coverage
         run: pytest --cov-branch --cov-report=xml
         continue-on-error: true
+      
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
 
-      - name: Upload test and code coverage reports to Codecov
+      - name: Upload code coverage reports to Codecov
+        if: ${{ !cancelled() }}  
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
