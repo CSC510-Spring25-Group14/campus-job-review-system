@@ -7,6 +7,7 @@ from datetime import datetime
 from unittest.mock import patch
 from flask import url_for 
 from flask_login import login_user, current_user
+from app.util import extract_experience_summary, call_groq_api
 
 @pytest.fixture
 def client():
@@ -894,4 +895,254 @@ def test_search_candidates_unauthorized(client, login_user):
     assert response.status_code == 200  # Redirected with unauthorized message
 
 
+# Test learning feature for Job Seeker
+def test_learning_non_recruiter(client, login_user):
+    with client.session_transaction() as session:
+        session['user_id'] = login_user.id
+        session['is_recruiter'] = False  # Simulate a non-recruiter user
+    
+    response = client.get('/learning', follow_redirects=True)
+    assert response.status_code == 200
 
+# Test learning feature for Recruiter
+def test_learning_recruiter(client, login_user):
+    with client.session_transaction() as session:
+        session['user_id'] = login_user.id
+        session['is_recruiter'] = True  # Simulate a recruiter user
+    
+    response = client.get('/learning', follow_redirects=True)
+    assert response.status_code == 200
+
+# Test if groq api key env variable is set
+def test_groq_api_key_env_variable():
+    variable_name = "GROQ_API_KEY"
+    assert variable_name in os.environ, f"Environment variable '{variable_name}' does not exist"
+
+# Test to_dict() function for job experience with no skills 
+def test_to_dict_no_skills(client, login_user):
+    with client.session_transaction() as session:
+        session['user_id'] = login_user.id
+        session['is_recruiter'] = False     # Simulate a non-recruiter user
+
+    # Create a user
+    user = User(username="learning_user_1", email="learninguser1@example.com", password="testpassword1")
+    db.session.add(user)
+    db.session.commit()
+
+    # Add experience for the user
+    jobExperience = JobExperience(
+            job_title="Software Engineer",
+            company_name="TechCorp",
+            location="Remote",
+            duration="2 years",
+            description="Worked on web applications.",
+            username=user.username
+        )
+    db.session.add(jobExperience)
+    db.session.commit()
+
+    # Expected output
+    expected_to_dict_output = {
+        "id": jobExperience.id,
+        "job_title": "Software Engineer",
+        "company_name": "TechCorp",
+        "duration": "2 years",
+        "description": "Worked on web applications.",
+        "skills": None,
+        "username": "learning_user_1"
+    }
+
+    # Compare actual and expected output
+    assert jobExperience.to_dict() == expected_to_dict_output
+
+# Test to_dict() function for job experience with all fields
+def test_to_dict_all_fields(client, login_user):
+    with client.session_transaction() as session:
+        session['user_id'] = login_user.id
+        session['is_recruiter'] = False     # Simulate a non-recruiter user
+
+    # Create a user
+    user = User(username="learning_user_2", email="learninguser2@example.com", password="testpassword2")
+    db.session.add(user)
+    db.session.commit()
+
+    # Add experience for the user
+    jobExperience = JobExperience(
+            job_title="SDE III",
+            company_name="Meta",
+            location="US",
+            duration="3 years",
+            description="Worked on Flask web applications.",
+            skills="Python, Flask, Postman, REST API",
+            username=user.username
+        )
+    db.session.add(jobExperience)
+    db.session.commit()
+
+    # Expected output
+    expected_to_dict_output = {
+        "id": jobExperience.id,
+        "job_title": "SDE III",
+        "company_name": "Meta",
+        "duration": "3 years",
+        "description": "Worked on Flask web applications.",
+        "skills": "Python, Flask, Postman, REST API",
+        "username": "learning_user_2"
+    }
+
+    # Compare actual and expected output
+    assert jobExperience.to_dict() == expected_to_dict_output
+
+# Test extract_experience_summary for user with no prior experience
+def test_extract_experience_summary_no_experience(client, login_user):
+    with client.session_transaction() as session:
+        session['user_id'] = login_user.id
+        session['is_recruiter'] = False     # Simulate a non-recruiter user
+
+    # Create a user
+    user = User(username="learning_user_3", email="learninguser3@example.com", password="testpassword3")
+    db.session.add(user)
+    db.session.commit()
+
+    # As of now, the user "learning_user_3" does not have any job experience
+    # Extract job experience summary of "learning_user_3" user
+    experience_summary_actual_output = extract_experience_summary(user)
+
+    assert experience_summary_actual_output == {}
+
+# Test extract_experience_summary for user with one prior experience
+def test_extract_experience_summary_one_experience(client, login_user):
+    with client.session_transaction() as session:
+        session['user_id'] = login_user.id
+        session['is_recruiter'] = False     # Simulate a non-recruiter user
+
+    # Create a user
+    user = User(username="learning_user_4", email="learninguser4@example.com", password="testpassword4")
+    db.session.add(user)
+    db.session.commit()
+
+    # Add one job experience for user "learning_user_4"
+    job_experience = JobExperience(
+            job_title="Data Scientist",
+            company_name="DataCorp",
+            location="New York",
+            duration="1 year",
+            description="Analyzed large datasets.",
+            skills="Python, SQL, Scala, Spark",
+            username=user.username
+        )
+    db.session.add(job_experience)
+    db.session.commit()
+
+    # Extract job experience summary of "learning_user_3" user
+    experience_summary_actual_output = extract_experience_summary(user)
+
+    experience_summary_expected_output = {
+        "company_name": ["DataCorp"],
+        "description": ["Analyzed large datasets."],
+        "duration": ["1 year"],
+        "job_title": ["Data Scientist"],
+        "skills": ["Python, SQL, Scala, Spark"],
+        "username": "learning_user_4"
+    }
+
+    assert experience_summary_actual_output == experience_summary_expected_output
+
+# Test extract_experience_summary for user with more than one prior experience
+def test_extract_experience_summary_multiple_experiences(client, login_user):
+    with client.session_transaction() as session:
+        session['user_id'] = login_user.id
+        session['is_recruiter'] = False     # Simulate a non-recruiter user
+
+    # Create a user
+    user = User(username="learning_user_5", email="learninguser5@example.com", password="testpassword5")
+    db.session.add(user)
+    db.session.commit()
+
+    # Add multiple job experiences for user "learning_user_5"
+    job_experiences = [
+        JobExperience(
+            job_title="Software Engineer",
+            company_name="TechCorp",
+            location="Remote",
+            duration="2 years",
+            description="Worked on web applications.",
+            skills="Python, SQL, JS",
+            username=user.username
+        ),
+        JobExperience(
+            job_title="Associate Data Scientist",
+            company_name="LabCorp",
+            location="Boston",
+            duration="3 years",
+            description="Analyzed large datasets.",
+            skills="Python, SQL, Scala",
+            username=user.username
+        ),
+        JobExperience(
+            job_title="Senior Data Scientist",
+            company_name="DataCorp",
+            location="New York",
+            duration="2 years",
+            description="Analyzed large datasets and kafka streams.",
+            skills="Python, SQL, Scala, Spark, Apache Kafka",
+            username=user.username
+        )
+    ]
+    db.session.add_all(job_experiences)
+    db.session.commit()
+
+    # Extract job experience summary of "learning_user_3" user
+    experience_summary_actual_output = extract_experience_summary(user)
+
+    experience_summary_expected_output = {
+        "company_name": ["TechCorp", "LabCorp", "DataCorp"],
+        "description": ["Worked on web applications.", "Analyzed large datasets.", "Analyzed large datasets and kafka streams."],
+        "duration": ["2 years", "3 years", "2 years"],
+        "job_title": ["Software Engineer", "Associate Data Scientist", "Senior Data Scientist"],
+        "skills": ["Python, SQL, JS", "Python, SQL, Scala", "Python, SQL, Scala, Spark, Apache Kafka"],
+        "username": "learning_user_5"
+    }
+
+    assert experience_summary_actual_output == experience_summary_expected_output
+
+# Test learning recommendation by Groq AI for zero skills and experience
+def test_learning_recommendation_no_skills_and_experience():
+
+    import os, json
+    
+    # Create an empty json for user experience
+    user_experience_summary = json.dumps({}) + "\n Just give the output list."
+
+    # Path for prompt template    
+    file_path = os.path.join('app', 'prompts', 'learning_prompt_template.txt')
+
+    # Call GROQ AI API
+    recommended_list = json.loads(call_groq_api(file_path, user_experience_summary))
+
+    assert recommended_list == []
+
+# Test learning recommendation by Groq AI for some skills and experience
+def test_learning_recommendation_with_skills_and_experience():
+
+    import os, json
+
+    experience_summary = {
+        "company_name": ["TechCorp", "LabCorp", "DataCorp"],
+        "description": ["Worked on web applications.", "Analyzed large datasets.", "Analyzed large datasets and kafka streams."],
+        "duration": ["2 years", "3 years", "2 years"],
+        "job_title": ["Software Engineer", "Associate Data Scientist", "Senior Data Scientist"],
+        "skills": ["Python, SQL, JS", "Python, SQL, Scala", "Python, SQL, Scala, Spark, Apache Kafka"],
+        "username": "learning_user_5"
+    }
+
+    # Create an empty json for user experience
+    user_experience_summary = json.dumps(experience_summary) + "\n Just give the output list."
+
+    # Path for prompt template    
+    file_path = os.path.join('app', 'prompts', 'learning_prompt_template.txt')
+
+    # Call GROQ AI API
+    recommended_list = json.loads(call_groq_api(file_path, user_experience_summary))
+
+    assert 'Python' in ', '.join(str(item) for item in recommended_list)
