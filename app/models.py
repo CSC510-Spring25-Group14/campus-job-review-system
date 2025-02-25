@@ -100,7 +100,10 @@ class Recruiter_Postings(db.Model):
     def __repr__(self):
         return f"<RecruiterPosting {self.postingId} - {self.jobTitle}>"
 
-    def getJobDetails(self):
+    def get_job_details(self):
+        """
+            Return details about the current Recruiter_Postings object
+        """
         return {
             'postingId': self.postingId,
             'jobTitle': self.jobTitle,

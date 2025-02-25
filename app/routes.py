@@ -319,6 +319,9 @@ def order_applicants(posting_id):
     """
     Order applicants from the incoming applicants for a specific job posting.
     """
+    if not current_user.is_recruiter:
+        flash("Unauthorized: You must be a recruiter to post jobs.", "danger")
+        return redirect(url_for("home"))
 
     import json
 
@@ -340,10 +343,8 @@ def order_applicants(posting_id):
             # Append the current applicant's experience summary in the list of summaries
             application_user_profiles.append(experience_summary)
 
-    print(application_user_profiles)
-
     # Retrieve the posting details
-    posting_data = posting.getJobDetails()
+    posting_data = posting.get_job_details()
     
     # Form the input prompt
     input_prompt = "Job Description: " + posting_data['jobDescription'] + " \n " + json.dumps(application_user_profiles) + "\n Just give the output list."
