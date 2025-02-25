@@ -36,7 +36,7 @@ def extract_experience_summary(applicant):
   
   return experience_summary
 
-def call_groq_api(template_path, input_data):
+def call_groq_api(template_path, input_prompt):
   """
     Given a prompt template, the function returns the output from GROQ AI
   """
@@ -56,7 +56,7 @@ def call_groq_api(template_path, input_data):
       },
       {
         "role": "user",
-        "content": input_data
+        "content": input_prompt
       }
     ],
     temperature=0.4,

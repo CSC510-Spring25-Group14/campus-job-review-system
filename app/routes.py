@@ -7,6 +7,7 @@ from app.util import extract_experience_summary, call_groq_api
 
 from app.forms import RegistrationForm, LoginForm, ReviewForm, JobApplicationForm, PostingForm
 from datetime import datetime
+from app.util import extract_experience_summary, call_groq_api
 
 app.config["SECRET_KEY"] = "5791628bb0b13ce0c676dfde280ba245"
 
@@ -311,6 +312,66 @@ def get_applications(posting_id):
         "posting_applicants.html",
         posting=posting,
         application_user_profiles=application_user_profiles,
+    )
+
+@app.route("/recruiter/order-applicants/<int:posting_id>",methods=["GET"])
+@login_required
+def order_applicants(posting_id):
+    """
+    Order applicants from the incoming applicants for a specific job posting.
+    """
+    if not current_user.is_recruiter:
+        flash("Unauthorized: You must be a recruiter to post jobs.", "danger")
+        return redirect(url_for("home"))
+
+    import json
+
+    # Ensure the recruiter owns the posting
+    posting = Recruiter_Postings.query.filter_by(
+        postingId=posting_id, recruiterId=current_user.id
+    ).first_or_404()
+
+    # Fetch all applications for this posting
+    applications = PostingApplications.query.filter_by(postingId=posting_id).all()
+
+    # Create a list of user profiles associated with the applications
+    application_user_profiles = []
+    for application in applications:
+        applicant = User.query.filter_by(id=application.applicantId).first()
+        if applicant:
+            experience_summary = extract_experience_summary(applicant)
+
+            # Append the current applicant's experience summary in the list of summaries
+            application_user_profiles.append(experience_summary)
+
+    # Retrieve the posting details
+    posting_data = posting.get_job_details()
+    
+    # Form the input prompt
+    input_prompt = "Job Description: " + posting_data['jobDescription'] + " \n " + json.dumps(application_user_profiles) + "\n Just give the output list."
+
+    # Path for prompt template    
+    import os
+    file_path = os.path.join('app', 'prompts', 'order_applicants_template.txt')
+
+    # Call GROQ AI API
+    recommended_list = json.loads(call_groq_api(file_path, input_prompt))
+
+    # Reorder the JSONs as per the recommended list
+    n = len(application_user_profiles)
+    ordered_applications = [None] * n
+    for i, p in enumerate(recommended_list):
+        ordered_applications[i] = application_user_profiles[p - 1]
+
+    # Add applicant id in each applicant data. applicant id is needed for "shortlisting candidate" functionality
+    for application in ordered_applications:
+        application['id'] = User.query.filter_by(username=application['username']).first().id
+
+    # Pass the job description and the ordered applications to the template
+    return render_template(
+        "order_applicants_using_AI.html",
+        posting=posting_data,
+        applicants=ordered_applications
     )
 
 @app.route("/applicant_profile/<string:applicant_username>", methods=["GET"])
