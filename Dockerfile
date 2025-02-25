@@ -17,6 +17,7 @@ COPY . /app
 # Set environment variables
 ENV FLASK_APP=crudapp.py
 ENV FLASK_ENV=development
+ENV GROQ_API_KEY=<YOUR-GROQ-API-KEY-HERE>
 
 # Initialize the database
 RUN flask db init || true

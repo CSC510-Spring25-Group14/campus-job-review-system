@@ -1,6 +1,7 @@
 import os
 import sys
 import pytest
+import json
 from app import app, db
 from app.models import Meetings, User, Reviews, JobApplication, JobExperience, Recruiter_Postings, PostingApplications
 from app.llm_analyzer import (
@@ -11,6 +12,7 @@ from datetime import datetime
 from unittest.mock import patch
 from flask import url_for 
 from flask_login import login_user, current_user
+from app.util import extract_experience_summary, call_groq_api
 
 @pytest.fixture
 def client():
@@ -897,6 +899,324 @@ def test_search_candidates_unauthorized(client, login_user):
     response = client.get('/search_candidates', follow_redirects=True)
     assert response.status_code == 200  # Redirected with unauthorized message
 
+# Test "order applicants" as a non-recruiter
+def test_order_applicants_unauthorized(client, login_user):
+    with client.session_transaction() as session:
+        session['_user_id'] = login_user.id
+        session['is_recruiter'] = False # Simulate a non-recruiter user
+
+    posting = Recruiter_Postings(
+        postingId=1,
+        recruiterId=login_user.id,
+        jobTitle="Software Engineer",
+        jobLink="https://example.com/software-engineer",
+        jobDescription="Develop software applications.",
+        jobLocation="Remote",
+        jobPayRate=50,
+        maxHoursAllowed=40
+    )
+    db.session.add(posting)
+    db.session.commit()
+
+    response = client.get(f'/recruiter/order-applicants/{posting.postingId}', follow_redirects=True)
+    assert response.status_code == 200 # Redirected with unauthorized message
+
+# Test "order applicants" as a recruiter
+def test_order_applicants_authorized(client, login_user):
+    with client.session_transaction() as session:
+        session['_user_id'] = login_user.id
+        session['is_recruiter'] = True # Simulate a non-recruiter user
+
+    # Add a posting
+    posting = Recruiter_Postings(
+        postingId=1,
+        recruiterId=login_user.id,
+        jobTitle="Software Engineer",
+        jobLink="https://example.com/software-engineer",
+        jobDescription="Develop software applications.",
+        jobLocation="Remote",
+        jobPayRate=50,
+        maxHoursAllowed=40
+    )
+    db.session.add(posting)
+    db.session.commit()
+
+    response = client.get(f'/recruiter/order-applicants/{posting.postingId}', follow_redirects=True)
+    assert response.status_code == 200
+
+# Test "order applicants" as a non-recruiter for an invalid posting id
+def test_order_applicants_with_invalid_posting_id(client, login_user):
+    with client.session_transaction() as session:
+        session['_user_id'] = login_user.id
+        session['is_recruiter'] = True # Recruiter
+
+    # Add a posting
+    posting = Recruiter_Postings(
+        postingId=1,
+        recruiterId=login_user.id,
+        jobTitle="Software Engineer",
+        jobLink="https://example.com/software-engineer",
+        jobDescription="Develop software applications.",
+        jobLocation="Remote",
+        jobPayRate=50,
+        maxHoursAllowed=40
+    )
+    db.session.add(posting)
+    db.session.commit()
+
+    response = client.get('/recruiter/order-applicants/2', follow_redirects=True) # Expecting a 404 for postingId=2
+    assert response.status_code == 404
+
+# Test a new Posting with 0 applicants
+def test_posting_with_no_applications(client, login_user):
+    with client.session_transaction() as session:
+        session['_user_id'] = login_user.id
+        session['is_recruiter'] = True  # Recruiter
+    
+    # Add a posting
+    posting = Recruiter_Postings(
+        postingId=1,
+        recruiterId=login_user.id,
+        jobTitle="Software Engineer",
+        jobLink="https://example.com/software-engineer",
+        jobDescription="Develop software applications.",
+        jobLocation="Remote",
+        jobPayRate=50,
+        maxHoursAllowed=40
+    )
+    db.session.add(posting)
+    db.session.commit()
+
+    assert PostingApplications.query.filter_by(postingId=posting.postingId).all() == []
+
+# Test "Order Applicants" for a posting with 0 applicants
+def test_order_applicants_with_no_applications(client, login_user):
+    with client.session_transaction() as session:
+        session['_user_id'] = login_user.id
+        session['is_recruiter'] = True  # Recruiter
+    
+    # Add a posting
+    posting = Recruiter_Postings(
+        postingId=1,
+        recruiterId=login_user.id,
+        jobTitle="Software Engineer",
+        jobLink="https://example.com/software-engineer",
+        jobDescription="Develop software applications.",
+        jobLocation="Remote",
+        jobPayRate=50,
+        maxHoursAllowed=40
+    )
+    db.session.add(posting)
+    db.session.commit()
+
+    response = client.get(f'/recruiter/order-applicants/{posting.postingId}', follow_redirects=True)
+    assert b'Applications are ordered' in response.data
+    assert b'No applicants found for this job posting' in response.data
+
+# Test "Order Applicants" for a posting with 1 applicant
+def test_order_applicants_with_one_application(client, login_user):
+    with client.session_transaction() as session:
+        session['_user_id'] = login_user.id
+        session['is_recruiter'] = True  # Recruiter
+    
+    # Add a posting
+    posting = Recruiter_Postings(
+        postingId=1,
+        recruiterId=login_user.id,
+        jobTitle="Data Engineer",
+        jobLink="https://example.com/data-engineer",
+        jobDescription="Develop software applications.",
+        jobLocation="Remote",
+        jobPayRate=50,
+        maxHoursAllowed=40
+    )
+    db.session.add(posting)
+    db.session.commit()
+
+    # Add a jobseeker
+    jobseeker = User(username="test_user1", email="test1@example.com", password="testpasswd1")
+    db.session.add(jobseeker)
+    db.session.commit()
+
+    # Add experiences for the jobseeker
+    experiences = [
+        JobExperience(
+            job_title="Software Engineer",
+            company_name="TechCorp",
+            location="Remote",
+            duration="2 years",
+            description="Worked on web applications.",
+            username=jobseeker.username
+        ),
+        JobExperience(
+            job_title="Data Scientist",
+            company_name="DataCorp",
+            location="New York",
+            duration="1 year",
+            description="Analyzed large datasets.",
+            username=jobseeker.username
+        )
+    ]
+    db.session.add_all(experiences)
+    db.session.commit()
+
+    # Add an application by the jobseeker for the posting
+    application = PostingApplications(
+        postingId=posting.postingId,
+        recruiterId=login_user.id,
+        applicantId=jobseeker.id
+    )
+    db.session.add(application)
+    db.session.commit()
+
+    # Try ordering applicants in case of 1 applicant
+    response = client.get(f'/recruiter/order-applicants/{posting.postingId}', follow_redirects=True)
+    
+    # Check the response
+    assert b'Applications are ordered' in response.data
+    assert b'test_user1' in response.data
+
+# Check get_job_details in Recruiter_Postings
+def test_get_job_details(client, login_user):
+    with client.session_transaction() as session:
+        session['_user_id'] = login_user.id
+        session['is_recruiter'] = True
+
+    # Add a sample posting with minimal values
+    posting = Recruiter_Postings(
+        postingId=1,
+        recruiterId=login_user.id,
+        jobTitle="Data Engineer",
+        jobLink="https://example.com/data-engineer",
+        jobDescription="Develop and maintain data engineering applications.",
+        jobLocation="Remote",
+        jobPayRate=50,
+        maxHoursAllowed=40
+    )
+
+    db.session.add(posting)
+    db.session.commit()
+
+    # Test get_job_details
+    expected_job_details = {
+            'postingId': posting.postingId,
+            'jobTitle': 'Data Engineer',
+            'jobDescription': 'Develop and maintain data engineering applications.',
+            'jobLocation': 'Remote'
+        }
+
+    assert posting.get_job_details() == expected_job_details
+
+# Test Recommender with 0 application
+def test_recommeder_for_posting_with_no_applications():
+    # Empty list to imply no applications 
+    application_user_profiles = []
+
+    # Form the input prompt
+    input_prompt = "Job Description: Data Engineer" + " \n " + json.dumps(application_user_profiles) + "\n Just give the output list."
+    
+    # Path for prompt template    
+    import os
+    file_path = os.path.join('app', 'prompts', 'order_applicants_template.txt')
+
+    # Call GROQ AI API
+    recommended_list = json.loads(call_groq_api(file_path, input_prompt))
+
+    assert recommended_list == []
+
+# Test Recommender with 1 application
+def test_recommender_for_posting_with_one_application():
+
+    # List to imply one application 
+    application_user_profiles = [
+        {
+            "job_title": ["SDE I", "SDE II"],
+            "company_name": ["DataBricks", "Microsoft"],
+            "duration": ["Jan 2019- Dec 2021", "Dec 2021 - Jun 2023"],
+            "description": [
+                "Worked in Big Data pipelines using Hadoop and Pyspark. Also built automated tests using Python.",
+                "Worked in C# and Python based products. Also, worked in OneNote Team."
+            ],
+            "skills": ["PySpark, Hadoop", "C#, Python, SQL"],
+            "username": "test_user1"
+        }
+    ]
+
+    # Form the input prompt
+    input_prompt = "Job Description: Data Engineer" + " \n " + json.dumps(application_user_profiles) + "\n Just give the output list."
+    
+    # Path for prompt template    
+    import os
+    file_path = os.path.join('app', 'prompts', 'order_applicants_template.txt')
+
+    # Call GROQ AI API
+    recommended_list = json.loads(call_groq_api(file_path, input_prompt))
+
+    assert recommended_list == [1]
+
+# Test Recommeder with multiple applications
+def test_recommeder_for_posting_with_multiple_applications():
+    
+    # List to imply multiple applications 
+    application_user_profiles = [
+        {
+            "job_title": ["SDE I", "SDE II"],
+            "company_name": ["DataBricks", "Microsoft"],
+            "duration": ["Jan 2019- Dec 2021", "Dec 2021 - Jun 2023"],
+            "description": [
+                "Worked in Big Data pipelines using Hadoop and Pyspark. Also built automated tests using Python.",
+                "Worked in C# and Python based products. Also, worked in OneNote Team."
+            ],
+            "skills": ["PySpark, Hadoop", "C#, Python, SQL"],
+            "username": "test_user1"
+        },
+        {
+            "job_title": ["SDE I", "SDE II"],
+            "company_name": ["Amazon", "Meta"],
+            "duration": ["Jan 2018- Jun 2022", "June 2022 - Present"],
+            "description": [
+            "Worked in AWS Website development.",
+            "Worked in llama team."
+            ],
+            "skills": [
+            "Java, Python, SQL, Spring Boot",
+            "Python, NLP, LLM, OpenSource"
+            ],
+            "username": "test_user2"
+        },
+        {
+            "job_title": ["QA I", "Senior QA ", "Lead QA"],
+            "company_name": ["TCS", "YouTube", "YouTube"],
+            "duration": [
+            "Jan 2017 - May 2019",
+            "July 2019 - Aug 2023",
+            "September 2023 - Present"
+            ],
+            "description": [
+            "Played a significant role in testing the Python Flask based webapp. Wrote automated tests.",
+            "Worked on regression tests and automated tests for the Youtube wesite.",
+            "Lead the QA team for Youtube website."
+            ],
+            "skills": [
+            "Python, Flask, Postman, Selenium",
+            "Python, Javascript, Selenium",
+            "Python, Selenium, Project Management"
+            ],
+            "username": "test_user_3"
+        }
+    ]
+
+    # Form the input prompt
+    input_prompt = "Job Description: Senior QA Engineer for Python based app" + " \n " + json.dumps(application_user_profiles) + "\n Just give the output list."
+    
+    # Path for prompt template    
+    import os
+    file_path = os.path.join('app', 'prompts', 'order_applicants_template.txt')
+
+    # Call GROQ AI API
+    recommended_list = json.loads(call_groq_api(file_path, input_prompt))
+
+    assert recommended_list == [3, 1, 2]
 
 @pytest.fixture
 def sample_resume():
@@ -997,3 +1317,256 @@ def test_analyze_resume_missing_text(mocker, resume):
         ] 
     }
 
+# Test learning feature for Job Seeker
+def test_learning_non_recruiter(client, login_user):
+    with client.session_transaction() as session:
+        session['user_id'] = login_user.id
+        session['is_recruiter'] = False  # Simulate a non-recruiter user
+    
+    response = client.get('/learning', follow_redirects=True)
+    assert response.status_code == 200
+
+# Test learning feature for Recruiter
+def test_learning_recruiter(client, login_user):
+    with client.session_transaction() as session:
+        session['user_id'] = login_user.id
+        session['is_recruiter'] = True  # Simulate a recruiter user
+    
+    response = client.get('/learning', follow_redirects=True)
+    assert response.status_code == 200
+
+# Test if groq api key env variable is set
+def test_groq_api_key_env_variable():
+    variable_name = "GROQ_API_KEY"
+    assert variable_name in os.environ, f"Environment variable '{variable_name}' does not exist"
+
+# Test to_dict() function for job experience with no skills 
+def test_to_dict_no_skills(client, login_user):
+    with client.session_transaction() as session:
+        session['user_id'] = login_user.id
+        session['is_recruiter'] = False     # Simulate a non-recruiter user
+
+    # Create a user
+    user = User(username="learning_user_1", email="learninguser1@example.com", password="testpassword1")
+    db.session.add(user)
+    db.session.commit()
+
+    # Add experience for the user
+    job_experience = JobExperience(
+            job_title="Software Engineer",
+            company_name="TechCorp",
+            location="Remote",
+            duration="2 years",
+            description="Worked on web applications.",
+            username=user.username
+        )
+    db.session.add(job_experience)
+    db.session.commit()
+
+    # Expected output
+    expected_to_dict_output = {
+        "id": job_experience.id,
+        "job_title": "Software Engineer",
+        "company_name": "TechCorp",
+        "duration": "2 years",
+        "description": "Worked on web applications.",
+        "skills": None,
+        "username": "learning_user_1"
+    }
+
+    # Compare actual and expected output
+    assert job_experience.to_dict() == expected_to_dict_output
+
+# Test to_dict() function for job experience with all fields
+def test_to_dict_all_fields(client, login_user):
+    with client.session_transaction() as session:
+        session['user_id'] = login_user.id
+        session['is_recruiter'] = False     # Simulate a non-recruiter user
+
+    # Create a user
+    user = User(username="learning_user_2", email="learninguser2@example.com", password="testpassword2")
+    db.session.add(user)
+    db.session.commit()
+
+    # Add experience for the user
+    job_experience = JobExperience(
+            job_title="SDE III",
+            company_name="Meta",
+            location="US",
+            duration="3 years",
+            description="Worked on Flask web applications.",
+            skills="Python, Flask, Postman, REST API",
+            username=user.username
+        )
+    db.session.add(job_experience)
+    db.session.commit()
+
+    # Expected output
+    expected_to_dict_output = {
+        "id": job_experience.id,
+        "job_title": "SDE III",
+        "company_name": "Meta",
+        "duration": "3 years",
+        "description": "Worked on Flask web applications.",
+        "skills": "Python, Flask, Postman, REST API",
+        "username": "learning_user_2"
+    }
+
+    # Compare actual and expected output
+    assert job_experience.to_dict() == expected_to_dict_output
+
+# Test extract_experience_summary for user with no prior experience
+def test_extract_experience_summary_no_experience(client, login_user):
+    with client.session_transaction() as session:
+        session['user_id'] = login_user.id
+        session['is_recruiter'] = False     # Simulate a non-recruiter user
+
+    # Create a user
+    user = User(username="learning_user_3", email="learninguser3@example.com", password="testpassword3")
+    db.session.add(user)
+    db.session.commit()
+
+    # As of now, the user "learning_user_3" does not have any job experience
+    # Extract job experience summary of "learning_user_3" user
+    experience_summary_actual_output = extract_experience_summary(user)
+
+    assert experience_summary_actual_output == {}
+
+# Test extract_experience_summary for user with one prior experience
+def test_extract_experience_summary_one_experience(client, login_user):
+    with client.session_transaction() as session:
+        session['user_id'] = login_user.id
+        session['is_recruiter'] = False     # Simulate a non-recruiter user
+
+    # Create a user
+    user = User(username="learning_user_4", email="learninguser4@example.com", password="testpassword4")
+    db.session.add(user)
+    db.session.commit()
+
+    # Add one job experience for user "learning_user_4"
+    job_experience = JobExperience(
+            job_title="Data Scientist",
+            company_name="DataCorp",
+            location="New York",
+            duration="1 year",
+            description="Analyzed large datasets.",
+            skills="Python, SQL, Scala, Spark",
+            username=user.username
+        )
+    db.session.add(job_experience)
+    db.session.commit()
+
+    # Extract job experience summary of "learning_user_3" user
+    experience_summary_actual_output = extract_experience_summary(user)
+
+    experience_summary_expected_output = {
+        "company_name": ["DataCorp"],
+        "description": ["Analyzed large datasets."],
+        "duration": ["1 year"],
+        "job_title": ["Data Scientist"],
+        "skills": ["Python, SQL, Scala, Spark"],
+        "username": "learning_user_4"
+    }
+
+    assert experience_summary_actual_output == experience_summary_expected_output
+
+# Test extract_experience_summary for user with more than one prior experience
+def test_extract_experience_summary_multiple_experiences(client, login_user):
+    with client.session_transaction() as session:
+        session['user_id'] = login_user.id
+        session['is_recruiter'] = False     # Simulate a non-recruiter user
+
+    # Create a user
+    user = User(username="learning_user_5", email="learninguser5@example.com", password="testpassword5")
+    db.session.add(user)
+    db.session.commit()
+
+    # Add multiple job experiences for user "learning_user_5"
+    job_experiences = [
+        JobExperience(
+            job_title="Software Engineer",
+            company_name="TechCorp",
+            location="Remote",
+            duration="2 years",
+            description="Worked on web applications.",
+            skills="Python, SQL, JS",
+            username=user.username
+        ),
+        JobExperience(
+            job_title="Associate Data Scientist",
+            company_name="LabCorp",
+            location="Boston",
+            duration="3 years",
+            description="Analyzed large datasets.",
+            skills="Python, SQL, Scala",
+            username=user.username
+        ),
+        JobExperience(
+            job_title="Senior Data Scientist",
+            company_name="DataCorp",
+            location="New York",
+            duration="2 years",
+            description="Analyzed large datasets and kafka streams.",
+            skills="Python, SQL, Scala, Spark, Apache Kafka",
+            username=user.username
+        )
+    ]
+    db.session.add_all(job_experiences)
+    db.session.commit()
+
+    # Extract job experience summary of "learning_user_3" user
+    experience_summary_actual_output = extract_experience_summary(user)
+
+    experience_summary_expected_output = {
+        "company_name": ["TechCorp", "LabCorp", "DataCorp"],
+        "description": ["Worked on web applications.", "Analyzed large datasets.", "Analyzed large datasets and kafka streams."],
+        "duration": ["2 years", "3 years", "2 years"],
+        "job_title": ["Software Engineer", "Associate Data Scientist", "Senior Data Scientist"],
+        "skills": ["Python, SQL, JS", "Python, SQL, Scala", "Python, SQL, Scala, Spark, Apache Kafka"],
+        "username": "learning_user_5"
+    }
+
+    assert experience_summary_actual_output == experience_summary_expected_output
+
+# Test learning recommendation by Groq AI for zero skills and experience
+def test_learning_recommendation_no_skills_and_experience():
+
+    import os, json, time    
+    
+    # Create an empty json for user experience
+    user_experience_summary = json.dumps({}) + "\n Just give the output list."
+
+    # Path for prompt template    
+    file_path = os.path.join('app', 'prompts', 'learning_prompt_template.txt')
+
+    time.sleep(60)  # Wait for 60 seconds (1 minute) so as not to hit "rate_limit_exceeded"
+
+    # Call GROQ AI API
+    recommended_list = json.loads(call_groq_api(file_path, user_experience_summary))
+
+    assert recommended_list == []
+
+# Test learning recommendation by Groq AI for some skills and experience
+def test_learning_recommendation_with_skills_and_experience():
+
+    import os, json
+
+    experience_summary = {
+        "company_name": ["TechCorp", "LabCorp", "DataCorp"],
+        "description": ["Worked on web applications.", "Analyzed large datasets.", "Analyzed large datasets and kafka streams."],
+        "duration": ["2 years", "3 years", "2 years"],
+        "job_title": ["Software Engineer", "Associate Data Scientist", "Senior Data Scientist"],
+        "skills": ["Python, SQL, JS", "Python, SQL, Scala", "Python, SQL, Scala, Spark, Apache Kafka"],
+        "username": "learning_user_5"
+    }
+
+    # Create an empty json for user experience
+    user_experience_summary = json.dumps(experience_summary) + "\n Just give the output list."
+
+    # Path for prompt template    
+    file_path = os.path.join('app', 'prompts', 'learning_prompt_template.txt')
+
+    # Call GROQ AI API
+    recommended_list = json.loads(call_groq_api(file_path, user_experience_summary))
+
+    assert 'Python' in ', '.join(str(item) for item in recommended_list)

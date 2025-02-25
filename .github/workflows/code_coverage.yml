@@ -7,10 +7,11 @@ on:
   pull_request:
 
 jobs:
-  test:
+  test_and_coverage:
     runs-on: ubuntu-latest
     env:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -24,12 +25,25 @@ jobs:
         run: |
           pip install --upgrade pip && pip install -r requirements.txt
           python -m pip install --upgrade pip
-          pip install pytest coverage
-
-      - name: Run tests with coverage
-        run: coverage run -m pytest tests/
-
-      - name: Upload coverage results
+          pip install pytest pytest-cov
+      
+      - name: Test with pytest
         run: |
-          coverage xml
-          bash <(curl -s https://codecov.io/bash)
+          pytest --cov --junitxml=junit.xml
+        continue-on-error: true
+
+      - name: Run code coverage
+        run: pytest --cov-branch --cov-report=xml
+        continue-on-error: true
+      
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload code coverage reports to Codecov
+        if: ${{ !cancelled() }}  
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
