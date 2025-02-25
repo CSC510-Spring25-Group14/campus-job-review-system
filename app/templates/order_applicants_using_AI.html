@@ -1,14 +1,10 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container">
+<div class="container banner2">
     <h2 class="mt-4">Applications for {{ posting.jobTitle }}</h2>
     <p><strong>Location:</strong> {{ posting.jobLocation }}</p>
     <p><strong>Description:</strong> {{ posting.jobDescription }}</p>
-
-    <form method="GET" action="{{ url_for('order_applicants', posting_id=posting.postingId) }}">
-        <button type="submit" class="btn btn-primary">Order Applications using AI</button>
-    </form>
-
+    <p><strong>Note: </strong> Applications are ordered <strong>(Most Preferred to Least Preferred)</strong></p>
     <style>
         /* Styling for table text */
         table th, table td {
@@ -25,20 +21,20 @@
         }
     </style>
 
-    {% if application_user_profiles %}
+    {% if applicants %}
     <table class="table table-bordered mt-4">
         <thead>
             <tr>
+                <th>S.No.</th>
                 <th>Applicant</th>
-                <th>Email</th>
                 <th>Actions</th>
             </tr>
         </thead>
         <tbody>
-            {% for applicant in application_user_profiles %}
+            {% for applicant in applicants %}
             <tr>
+                <td>{{ loop.index }}</td>
                 <td>{{ applicant.username }}</td>
-                <td>{{ applicant.email }}</td>
                 <td>
                     <!-- Form for viewing applicant profile -->
                     <form method="GET" action="{{ url_for('get_applicant', applicant_username=applicant.username) }}" style="display: inline;">
@@ -51,7 +47,7 @@
                         <input type="hidden" name="posting_id" value="{{ posting.postingId }}">
                         <button type="submit" class="btn btn-primary">Schedule Meeting</button>
                     </form>
-                    
+
                     <!-- Form for toggling shortlist -->
                     <form method="POST" action="{{ url_for('toggle_shortlist', posting_id=posting.postingId, applicant_id=applicant.id) }}">
                         <button type="submit" class="btn btn-danger">
@@ -64,7 +60,7 @@
         </tbody>
     </table>
     {% else %}
-    <p class="mt-4 text-center">No applicants found for this job posting.</p>
+        <p class="mt-4 text-center">No applicants found for this job posting.</p>
     {% endif %}
 </div>
 {% endblock content %}
