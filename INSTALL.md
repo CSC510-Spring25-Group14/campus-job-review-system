@@ -5,6 +5,7 @@ Follow the steps below to set up the Campus Job Review System. You can choose to
 ---
 
 ## Table of Contents
+- [Setup Groq API Key](#setup-groq-api-key)
 - [Installation with Docker](#installation-with-docker)
    - [Docker Prerequisites](#docker-prerequisites)
    - [Docker Installation Steps](#docker-project-setup)
@@ -16,6 +17,9 @@ Follow the steps below to set up the Campus Job Review System. You can choose to
    - [Database Maintenance](#database-maintenance)
 
 ---
+
+## Setup Groq API Key
+- Obtain an Groq API Key from [here](https://console.groq.com/docs/quickstart). Store the key safely as it cannot be retrieved later.
 
 ## Installation with Docker
 
@@ -31,13 +35,20 @@ Follow the steps below to set up the Campus Job Review System. You can choose to
 ### Docker Project Setup
 1. **Clone the Project:**
    ```bash
-   git clone https://github.com/SEFall24-Team61/campus-job-review-system.git
+   git clone https://github.com/CSC510-Spring25-Group14/campus-job-review-system.git
    ```
 2. **Navigate to the Project Directory:**
    ```bash
    cd campus-job-review-system
    ```
-3. **Run the Deployment Script:**
+3. **Obtain Groq API Key:**
+
+   Update the following line in [Dockerfile](Dockerfile) with your Groq API key.
+   ```
+   ENV GROQ_API_KEY=<YOUR-GROQ-API-KEY-HERE>
+   ```
+
+4. **Run the Deployment Script:**
    #### For Mac OS
    ```bash
    bash deploy.sh
@@ -49,7 +60,7 @@ Follow the steps below to set up the Campus Job Review System. You can choose to
    ```
    This script will build and run the Docker container.
 
-4. **Access the Application:**
+5. **Access the Application:**
    Once the container is running, you should be able to access the application locally at `http://localhost:3000`.
 
 ---
@@ -85,20 +96,23 @@ Follow the steps below to set up the Campus Job Review System. You can choose to
        ```
 
 ### Project Setup
+1. **Set Environment Variable:**
+   
+   Add the Groq API key we obtained earlier as an environment variable with name ```GROQ_API_KEY``` in the system.
 
-1. **Clone the Project:**
+2. **Clone the Project:**
    ```bash
-   git clone https://github.com/SEFall24-Team61/campus-job-review-system.git
+   git clone https://github.com/CSC510-Spring25-Group14/campus-job-review-system.git
    ```
-2. **Navigate to the Project Directory:**
+3. **Navigate to the Project Directory:**
    ```bash
    cd campus-job-review-system/
    ```
-3. **Set Up a Virtual Environment:**
+4. **Set Up a Virtual Environment:**
    ```bash
    python -m venv venv
    ```
-4. **Activate the Virtual Environment:**
+5. **Activate the Virtual Environment:**
     - On Windows:
       ```bash
       .\venv\Scripts\activate
@@ -108,12 +122,12 @@ Follow the steps below to set up the Campus Job Review System. You can choose to
       source venv/bin/activate
 
       ```
-5. **Install Dependencies:**
+6. **Install Dependencies:**
    ```bash
    pip install --upgrade pip
    pip install -r requirements.txt
    ```
-6. **Database Setup:**
+7. **Database Setup:**
     - Initialize the database:
       ```bash
       flask db init
@@ -123,7 +137,7 @@ Follow the steps below to set up the Campus Job Review System. You can choose to
       flask db migrate -m "Initial migration"
       flask db upgrade
       ```
-7. **Run the Application:**
+8. **Run the Application:**
    ```bash
    flask run
    ```
