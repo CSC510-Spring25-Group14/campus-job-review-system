@@ -673,13 +673,16 @@ def learning():
     """
     applicant = User.query.filter_by(id=current_user.id).first()
     
-    import json
+    import json, os
 
     if applicant:
         # Extract the profile summary
-        profile_summary = json.dumps(extract_experience_summary(applicant))
+        profile_summary = json.dumps(extract_experience_summary(applicant)) + "\n Just give the output list."
 
-        recommendation = json.loads(call_groq_api("app\\prompts\\learning_prompt_template.txt", profile_summary))
+        # Form the file path
+        file_path = os.path.join("app", "prompts", "learning_prompt_template.txt")
+
+        recommendation = json.loads(call_groq_api(file_path, profile_summary))
 
         print(recommendation)
 
