@@ -1429,13 +1429,15 @@ def test_extract_experience_summary_multiple_experiences(client, login_user):
 # Test learning recommendation by Groq AI for zero skills and experience
 def test_learning_recommendation_no_skills_and_experience():
 
-    import os, json
+    import os, json, time    
     
     # Create an empty json for user experience
     user_experience_summary = json.dumps({}) + "\n Just give the output list."
 
     # Path for prompt template    
     file_path = os.path.join('app', 'prompts', 'learning_prompt_template.txt')
+
+    time.sleep(60)  # Wait for 60 seconds (1 minute) so as not to hit "rate_limit_exceeded"
 
     # Call GROQ AI API
     recommended_list = json.loads(call_groq_api(file_path, user_experience_summary))
