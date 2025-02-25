@@ -3,6 +3,10 @@ import sys
 import pytest
 from app import app, db
 from app.models import Meetings, User, Reviews, JobApplication, JobExperience, Recruiter_Postings, PostingApplications
+from app.llm_analyzer import (
+    analyze_resume,
+    extract_experience_and_projects_from_pdf
+)
 from datetime import datetime
 from unittest.mock import patch
 from flask import url_for 
@@ -894,4 +898,102 @@ def test_search_candidates_unauthorized(client, login_user):
     assert response.status_code == 200  # Redirected with unauthorized message
 
 
+@pytest.fixture
+def sample_resume():
+    return {
+        "experience": [
+            {
+                "title": "Software Engineer Intern",
+                "company": "ABC Company",
+                "duration": "Jan 2025 - Mar 2025",
+                "description": [
+                    "Developed frontend",
+                    "Developed backend"
+                ]
+            }
+        ],
+        "projects": [
+            {
+                "title": "Fake News Detection using NLP",
+                "duration": "Oct 2024 - Dec 2024",
+                "description": [
+                    "Trained NLP model",
+                    "Measured accuracy"
+                ]
+            }
+        ]
+    }
+    
+@pytest.fixture
+def sample_pdf_path():
+    return "tests/sample_resume.pdf"
+
+@pytest.fixture
+def gemini_response(mocker):
+    response = {"candidates": 
+        [
+            {
+                "content": {
+                    "parts": [
+                        {
+                            "text": "Consider adding metrics to highlight project impact."
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+    mocker.patch("requests.post", return_value=mocker.Mock(status_code=200, json=lambda: response))
+    
+@pytest.fixture
+def gemini_timeout(mocker):
+    mocker.patch("requests.post", return_value=mocker.Mock(status_code=504))
+    
+def test_extract_experience_and_projects(path):
+    data = extract_experience_and_projects_from_pdf(path)
+    
+    assert "experience" in data
+    assert "projects" in data
+    assert isinstance(data["experience"], list)
+    assert isinstance(data["projects"], list)
+    
+def test_data_format(resume):
+    assert isinstance(resume["experience"], list)
+    assert isinstance(resume["projects"], list)
+    assert all(isinstance(exp, dict) for exp in resume["experience"])
+    assert all(isinstance(project, dict) for project in resume["projects"])
+    
+def test_empty_sections():
+    emp_resume = extract_experience_and_projects_from_pdf("tests/empty_resume.pdf")
+    assert emp_resume["experience"] == []
+    assert emp_resume["projects"] == []
+    
+def test_malformed_pdf():
+    with pytest.raises(Exception):
+        extract_experience_and_projects_from_pdf("tests/corrupt_resume.pdf")
+        
+def test_analyze_resume_success(response, resume):
+    response = analyze_resume(resume)
+    assert response is not None
+    assert "Consider adding metrics" in response
+    
+def test_analyze_resume_timeout(timeout, resume):
+    response = analyze_resume(resume)
+    assert response is None
+    
+def test_analyze_resume_invalid_response(mocker, resume):
+    mocker.patch("requests.post", return_value=mocker.ock(status_code=200, json=lambda: {}))
+    response = analyze_resume(resume)
+    assert response is None
+    
+def test_analyze_resume_missing_text(mocker, resume):
+    response = {
+        "candidates": [
+            {
+                "content": {
+                    "parts": [{}]
+                }
+            }
+        ] 
+    }
 
