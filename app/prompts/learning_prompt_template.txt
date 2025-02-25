@@ -6,6 +6,8 @@ Prioritize courses updated or verified within the last year.
 
 Include the last verification date for each URL in the JSON output.
 
+If the INPUT is empty, then return only empty list as OUTPUT
+
 Examples:
 INPUT:
 {
@@ -174,3 +176,10 @@ OUTPUT:
         "url": "https://testautomationu.applitools.com/python-tutorial/"
     }
 ]
+
+
+INPUT:
+{}
+
+OUTPUT:
+[]
