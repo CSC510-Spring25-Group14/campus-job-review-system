@@ -7,7 +7,7 @@ on:
   pull_request:
 
 jobs:
-  test:
+  test_and_coverage:
     runs-on: ubuntu-latest
     env:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
@@ -25,12 +25,21 @@ jobs:
         run: |
           pip install --upgrade pip && pip install -r requirements.txt
           python -m pip install --upgrade pip
-          pip install pytest coverage
-
-      - name: Run tests with coverage
-        run: coverage run -m pytest tests/
-
-      - name: Upload coverage results
+          pip install pytest pytest-cov
+      
+      - name: Test with pytest
         run: |
-          coverage xml
-          bash <(curl -s https://codecov.io/bash)
+          pytest --cov --junitxml=junit.xml
+
+      - name: Upload test results to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+      
+      - name: Run code coverage
+        run: pytest --cov-branch --cov-report=xml
+
+      - name: Upload code coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
