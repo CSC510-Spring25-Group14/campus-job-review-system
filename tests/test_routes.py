@@ -1111,8 +1111,12 @@ def test_recommeder_for_posting_with_no_applications():
     # Form the input prompt
     input_prompt = "Job Description: Data Engineer" + " \n " + json.dumps(application_user_profiles) + "\n Just give the output list."
     
+    # Path for prompt template    
+    import os
+    file_path = os.path.join('app', 'prompts', 'order_applicants_template.txt')
+
     # Call GROQ AI API
-    recommended_list = json.loads(call_groq_api("app\\prompts\\order_applicants_template.txt", input_prompt))
+    recommended_list = json.loads(call_groq_api(file_path, input_prompt))
 
     assert recommended_list == []
 
@@ -1137,8 +1141,12 @@ def test_recommender_for_posting_with_one_application():
     # Form the input prompt
     input_prompt = "Job Description: Data Engineer" + " \n " + json.dumps(application_user_profiles) + "\n Just give the output list."
     
+    # Path for prompt template    
+    import os
+    file_path = os.path.join('app', 'prompts', 'order_applicants_template.txt')
+
     # Call GROQ AI API
-    recommended_list = json.loads(call_groq_api("app\\prompts\\order_applicants_template.txt", input_prompt))
+    recommended_list = json.loads(call_groq_api(file_path, input_prompt))
 
     assert recommended_list == [1]
 
@@ -1197,7 +1205,11 @@ def test_recommeder_for_posting_with_multiple_applications():
     # Form the input prompt
     input_prompt = "Job Description: Senior QA Engineer for Python based app" + " \n " + json.dumps(application_user_profiles) + "\n Just give the output list."
     
+    # Path for prompt template    
+    import os
+    file_path = os.path.join('app', 'prompts', 'order_applicants_template.txt')
+
     # Call GROQ AI API
-    recommended_list = json.loads(call_groq_api("app\\prompts\\order_applicants_template.txt", input_prompt))
+    recommended_list = json.loads(call_groq_api(file_path, input_prompt))
 
     assert recommended_list == [3, 1, 2]
