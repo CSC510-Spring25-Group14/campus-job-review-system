@@ -348,9 +348,13 @@ def order_applicants(posting_id):
     
     # Form the input prompt
     input_prompt = "Job Description: " + posting_data['jobDescription'] + " \n " + json.dumps(application_user_profiles) + "\n Just give the output list."
-    
+
+    # Path for prompt template    
+    import os
+    file_path = os.path.join('app', 'prompts', 'order_applicants_template.txt')
+
     # Call GROQ AI API
-    recommended_list = json.loads(call_groq_api("app\\prompts\\order_applicants_template.txt", input_prompt))
+    recommended_list = json.loads(call_groq_api(file_path, input_prompt))
 
     # Reorder the JSONs as per the recommended list
     n = len(application_user_profiles)
