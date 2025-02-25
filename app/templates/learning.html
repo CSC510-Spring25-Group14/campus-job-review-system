@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container banner2">
+    <h1>Upskill Zone</h1>
+
+    <style>
+        /* Styling for table text */
+        table th, table td {
+            color: white;
+            background-color: #343a40; /* Dark background for contrast */
+        }
+
+        table th {
+            font-weight: bold;
+        }
+
+        table {
+            border: 1px solid white; /* Optional for better visibility */
+        }
+    </style>
+
+    <hr>
+
+    {% if courses %}
+    <table class="table table-bordered mt-4">
+        <thead>
+            <tr>
+                <th>Course</th>
+                <th>URL</th>
+           </tr>
+        </thead>
+        <tbody>
+            {% for course in courses %}
+            <tr>
+                <td>{{ course['title'] }}</td>
+                <td><a href ="{{ course['url'] }}" target="_blank">Click Here</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="mt-4 text-center">No applicants found for this job posting.</p>
+    {% endif %}
+
+</div>
+{% endblock content %}
