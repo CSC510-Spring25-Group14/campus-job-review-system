@@ -1,0 +1,6 @@
+[run]
+source = app
+omit = app/**/__init__.py
+
+[report]
+include = app/**/*.py
