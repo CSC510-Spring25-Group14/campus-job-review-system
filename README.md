@@ -121,7 +121,7 @@ Choose Your Installation Method (with Docker or without Docker). Detailed instru
 ## 🎥 Demo Video
 Check out our demo video to see the application in action! Click the link below to watch:
 
-https://drive.google.com/file/d/1oAObuweDIOl6X-vy0h5HK-CFmyReeOJx/view?usp=sharing
+[Our Team Demo Video](https://drive.google.com/file/d/1w4614h69r5_wOLjVob78qUb1AnL8e2qx/view)
 
 <a id="project-poster"></a>
 ## 📊 Project Poster
