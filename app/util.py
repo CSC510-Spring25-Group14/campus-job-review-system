@@ -42,7 +42,7 @@ def call_groq_api(template_path, input_prompt):
   """
   with open(template_path, "r") as pt:
     prompt_temp = pt.read()
-
+  
   from groq import Groq
   import os
 
