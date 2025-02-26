@@ -41,8 +41,8 @@ Finding a job on campus can be overwhelming. Students often rely on word-of-mout
 - **Interview Scheduling:** Recruiters can schedule interviews with candidates directly through the platform, providing updates that candidates can view and manage.
 - **AI Recommendation for Shortlisting Applicants:** With AI, Recruiters can order applicants based on relevance to the job posting.
 - **AI Recommendation for Learning Resources:** Now, any user has a list of AI-suggested learning resources based on their skills and experiences. 
-- **TBD**
-
+- **Tags for Applications to enable faster tracking:** With this featuer, a job seeker can attach multiple tags to their application, to group them accordingly.
+ 
 By fostering transparency and collaboration, our platform empowers students to navigate the campus job market confidently.
 
 ---
