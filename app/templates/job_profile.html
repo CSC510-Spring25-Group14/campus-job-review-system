@@ -40,6 +40,27 @@
 
     <hr>
 
+    <!-- Job Match Percentage Section -->
+    <div class="mb-4">
+        <h3>Job Match Percentage</h3>
+        <form method="POST" action="{{ url_for('job_match') }}">
+            <div class="mb-3">
+                <label for="job_description" class="form-label">Job Description</label>
+                <textarea class="form-control" id="job_description" name="job_description" rows="4" placeholder="Paste the job description here..." required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Calculate Match Percentage</button>
+        </form>
+    </div>
+
+    <!-- Display Match Result -->
+    {% if match_percentage is not none %}
+        <div class="alert alert-info mt-3">
+            <h4>Match Percentage: {{ match_percentage }}%</h4>
+        </div>
+    {% endif %}
+
+    <hr>
+
     <!-- Display Job Experiences -->
     <div class="mb-4">
         <h3>Your Job Experiences</h3>

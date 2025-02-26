@@ -2,8 +2,7 @@ from flask import render_template, request, redirect, flash, url_for, abort, jso
 from flask_login import login_user, current_user, logout_user, login_required
 from app.services.job_fetcher import fetch_job_listings
 from app import app, db, bcrypt
-from app.models import Meetings, Reviews, User, JobApplication, Recruiter_Postings, PostingApplications, JobExperience
-
+from app.models import Meetings, Reviews, User, JobApplication, Recruiter_Postings, PostingApplications, JobExperience, Tag
 from app.forms import RegistrationForm, LoginForm, ReviewForm, JobApplicationForm, PostingForm
 from datetime import datetime
 from app.util import extract_experience_summary, call_groq_api
@@ -187,6 +186,28 @@ def getVacantJobs():
     """
     postings = Recruiter_Postings.query.all()
     return render_template("dashboard.html", postings=postings)
+
+@app.route("/application_tracker/filter", methods=["GET"])
+@login_required
+def filter_applications():
+    selected_tags = request.args.getlist('tags')
+    
+    if selected_tags:
+        job_applications = JobApplication.query.filter(
+            JobApplication.user_id == current_user.id,
+            JobApplication.tags.any(Tag.name.in_(selected_tags))
+        ).all()
+    else:
+        job_applications = JobApplication.query.filter_by(user_id=current_user.id).all()
+    
+    all_tags = Tag.query.all()
+    return render_template(
+        "job_applications.html",
+        title="Application Tracker",
+        job_applications=job_applications,
+        all_tags=all_tags,
+        selected_tags=selected_tags
+    )
 
 
 @app.route("/apply/<int:posting_id>", methods=["POST"])
@@ -464,12 +485,13 @@ def new_job_application():
 @app.route("/application_tracker")
 @login_required
 def application_tracker():
-    # Query all job applications for the logged-in user
     job_applications = JobApplication.query.filter_by(user_id=current_user.id).all()
+    all_tags = Tag.query.all()
     return render_template(
         "job_applications.html",
         title="Application Tracker",
         job_applications=job_applications,
+        all_tags=all_tags
     )
 
 @app.route("/add_job_application", methods=["POST"])
@@ -479,6 +501,7 @@ def add_job_application():
     applied_on = request.form.get('applied_on')
     last_update_on = request.form.get('last_update_on')
     status = request.form.get('status')
+    tags = request.form.getlist('tags')
 
     new_application = JobApplication(
         job_link=job_link,
@@ -488,8 +511,18 @@ def add_job_application():
         user_id=current_user.id
     )
 
+    for tag_name in tags:
+        tag = Tag.query.filter_by(name=tag_name).first()
+        if not tag:
+            tag = Tag(name=tag_name)
+        new_application.tags.append(tag)
+
     db.session.add(new_application)
     db.session.commit()
+
+    flash("Job application added successfully!", "success")
+    return redirect(url_for('application_tracker'))
+
 
     flash("Job application added successfully!", "success")
     return redirect(url_for('application_tracker'))

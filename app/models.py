@@ -1,15 +1,27 @@
 from app import db, login_manager
 from flask_login import UserMixin
 
-
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
+# Association table for the many-to-many relationship between JobApplication and Tag
+if 'job_application_tags' not in db.metadata.tables:
+    job_application_tags = db.Table('job_application_tags',
+        db.Column('job_application_id', db.Integer, db.ForeignKey('job_application.id'), primary_key=True),
+        db.Column('tag_id', db.Integer, db.ForeignKey('tag.id'), primary_key=True)
+    )
+
+class Tag(db.Model):
+    """Model to store tags for job applications"""
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True, nullable=False)
+
+    def __repr__(self):
+        return f"<Tag {self.name}>"
 
 class Reviews(db.Model):
     """Model which stores the information of the reviews submitted"""
-
     id = db.Column(db.Integer, primary_key=True)
     department = db.Column(db.String(64), index=True, nullable=False)
     locations = db.Column(db.String(120), index=True, nullable=False)
@@ -26,10 +38,8 @@ class Reviews(db.Model):
     def __repr__(self):
         return f"<Review {self.id} - {self.job_title}>"
 
-
 class Vacancies(db.Model):
     """Model which stores the information of the reviews submitted"""
-
     vacancyId = db.Column(db.Integer, primary_key=True)
     jobTitle = db.Column(db.String(500), index=True, nullable=False)
     jobDescription = db.Column(db.String(1000), index=True, nullable=False)
@@ -37,9 +47,7 @@ class Vacancies(db.Model):
     jobPayRate = db.Column(db.String(120), index=True, nullable=False)
     maxHoursAllowed = db.Column(db.Integer, nullable=False)
 
-    def __init__(
-        self, jobTitle, jobDescription, jobLocation, jobPayRate, maxHoursAllowed
-    ):
+    def __init__(self, jobTitle, jobDescription, jobLocation, jobPayRate, maxHoursAllowed):
         self.jobTitle = jobTitle
         self.jobDescription = jobDescription
         self.jobLocation = jobLocation
@@ -49,10 +57,8 @@ class Vacancies(db.Model):
     def __repr__(self):
         return f"<Vacancy {self.vacancyId} - {self.jobTitle}>"
 
-
 class User(db.Model, UserMixin):
     """Model to store user information"""
-
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(20), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
@@ -62,28 +68,41 @@ class User(db.Model, UserMixin):
 
     # Relationships
     reviews = db.relationship("Reviews", backref="author", lazy=True)
+    job_applications = db.relationship("JobApplication", backref="user", lazy=True)
 
     def __repr__(self):
         return f"User('{self.username}', '{self.email}')"
 
-
 class JobApplication(db.Model):
     """Model to store information about job applications"""
-
     id = db.Column(db.Integer, primary_key=True)
     job_link = db.Column(db.String(255), nullable=False)
     applied_on = db.Column(db.Date, nullable=False)
     last_update_on = db.Column(db.Date, nullable=False)
     status = db.Column(db.String(50), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    tags = db.relationship('Tag', secondary=job_application_tags, backref=db.backref('job_applications', lazy='dynamic'))
 
     def __repr__(self):
         return f"<JobApplication {self.id} - {self.status}>"
 
+    def add_tag(self, tag):
+        if not isinstance(tag, Tag):
+            tag = Tag.query.filter_by(name=tag).first() or Tag(name=tag)
+        if tag not in self.tags:
+            self.tags.append(tag)
+
+    def remove_tag(self, tag):
+        if isinstance(tag, str):
+            tag = Tag.query.filter_by(name=tag).first()
+        if tag in self.tags:
+            self.tags.remove(tag)
+
+    def get_tags(self):
+        return [tag.name for tag in self.tags]
 
 class Recruiter_Postings(db.Model):
     """Model which stores the information of the postings added by recruiter"""
-
     __tablename__ = "recruiter_postings"
     postingId = db.Column(db.Integer, primary_key=True)
     recruiterId = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
@@ -101,9 +120,6 @@ class Recruiter_Postings(db.Model):
         return f"<RecruiterPosting {self.postingId} - {self.jobTitle}>"
 
     def get_job_details(self):
-        """
-            Return details about the current Recruiter_Postings object
-        """
         return {
             'postingId': self.postingId,
             'jobTitle': self.jobTitle,
@@ -111,16 +127,13 @@ class Recruiter_Postings(db.Model):
             'jobLocation': self.jobLocation
         }
 
-
 class PostingApplications(db.Model):
     """Model which stores the information of all applications for each recruiter posting."""
-
     __tablename__ = "posting_applications"
-
-    postingId = db.Column(db.Integer, db.ForeignKey("recruiter_postings.postingId"), primary_key=True)  # ForeignKey referencing Recruiter_Postings
-    recruiterId = db.Column(db.Integer, db.ForeignKey("user.id"), primary_key=True)  # ForeignKey referencing User (Recruiter)
-    applicantId = db.Column(db.Integer, db.ForeignKey("user.id"), primary_key=True)  # ForeignKey referencing User (Applicant)
-    shortlisted = db.Column(db.Boolean, default=False, nullable=False)  # Whether this applicant is shortlisted for this posting
+    postingId = db.Column(db.Integer, db.ForeignKey("recruiter_postings.postingId"), primary_key=True)
+    recruiterId = db.Column(db.Integer, db.ForeignKey("user.id"), primary_key=True)
+    applicantId = db.Column(db.Integer, db.ForeignKey("user.id"), primary_key=True)
+    shortlisted = db.Column(db.Boolean, default=False, nullable=False)
 
     # Relationships
     recruiter = db.relationship("User", foreign_keys=[recruiterId], backref="reviewed_applications")
@@ -128,24 +141,18 @@ class PostingApplications(db.Model):
     job_posting = db.relationship("Recruiter_Postings", foreign_keys=[postingId], backref="applications")
 
     def __repr__(self):
-        return (
-            f"<PostingApplication Posting ID: {self.postingId}, "
-            f"Recruiter ID: {self.recruiterId}, Applicant ID: {self.applicantId}, "
-            f"Shortlisted: {self.shortlisted}>"
-        )
-
+        return f"<PostingApplication Posting ID: {self.postingId}, Recruiter ID: {self.recruiterId}, Applicant ID: {self.applicantId}, Shortlisted: {self.shortlisted}>"
 
 class JobExperience(db.Model):
     """Model to store job experiences for users"""
-
     id = db.Column(db.Integer, primary_key=True)
-    job_title = db.Column(db.String(120), nullable=False)  # Job title for this experience
-    company_name = db.Column(db.String(120), nullable=False)  # Company name
-    location = db.Column(db.String(120), nullable=False)  # Location of the job
-    duration = db.Column(db.String(50), nullable=False)  # Duration of the job
-    description = db.Column(db.Text, nullable=False)  # Description of the job responsibilities
-    skills = db.Column(db.Text, nullable=True)  # Skills used or gained in this job
-    username = db.Column(db.String(20), db.ForeignKey("user.username"), nullable=False)  # User who added this experience
+    job_title = db.Column(db.String(120), nullable=False)
+    company_name = db.Column(db.String(120), nullable=False)
+    location = db.Column(db.String(120), nullable=False)
+    duration = db.Column(db.String(50), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    skills = db.Column(db.Text, nullable=True)
+    username = db.Column(db.String(20), db.ForeignKey("user.username"), nullable=False)
 
     def __repr__(self):
         return f"<JobExperience {self.job_title} at {self.company_name} | Skills: {self.skills}>"
@@ -163,7 +170,6 @@ class JobExperience(db.Model):
 
 class Meetings(db.Model):
     """Model to store meeting information"""
-
     id = db.Column(db.Integer, primary_key=True)
     recruiter_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     applicant_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
