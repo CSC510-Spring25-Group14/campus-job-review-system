@@ -42,7 +42,8 @@ Finding a job on campus can be overwhelming. Students often rely on word-of-mout
 - **Interview Scheduling:** Recruiters can schedule interviews with candidates directly through the platform, providing updates that candidates can view and manage.
 - **AI Recommendation for Shortlisting Applicants:** With AI, Recruiters can order applicants based on relevance to the job posting.
 - **AI Recommendation for Learning Resources:** Now, any user h a list of AI-suggested learning resources based on their skills and experiences. 
-- **TBD**
+- **AI Powered Resume Suggestions:** Once a job seeker uploads their resume on the portal, suggestions are provided to the person regarding improvements in the experience and projects section.
+- **Auto-Fill Job Profile from Resume:** Once the resume is uploaded on the database, the job seeker is provided with the functionality of auto-filling the job profile section directly from the resume saving time.
 
 By fostering transparency and collaboration, our platform empowers students to navigate the campus job market confidently.
 
@@ -148,14 +149,14 @@ We’re excited about the enhancements coming to the NCSU Campus Jobs Review Sys
 - **Review Validation System:** Implement a system to verify and validate job reviews, ensuring authenticity and reliability for users.
 - **AI-Powered Job Recommendations:** Implement AI to suggest relevant job opportunities to candidates based on their profile, skills, and application history.
 - **Advanced Search on Learning Resources Recommendations:** Upgrade learning Recommendations by adding more filters and enable the user to search for courses on topic they want.
-**TBD** One for each of us.
+- **Resume score:** Implement an algorithm to analyze the entire resume text and generate a score out of 100 based on the content of the resume highlighting specific areas where the person lost the score
 
 <a id="contributors"></a>
 ## 🙌 Contributors
 A heartfelt thank you to our contributors who made this project possible:
 
 - [Neel Ghoshal](https://github.com/NeelGhoshal)
-- [Shivang Nithinkumar Patel](https://github.com/ShivangPatel2602)
+- [Shivang Nitinkumar Patel](https://github.com/ShivangPatel2602)
 - [Mano Prakash Parthasarathi](https://github.com/manoprakash6)
 
 <a id="acknowledgements"></a>
