@@ -8,6 +8,7 @@ from app.llm_analyzer import (
     analyze_resume,
     extract_experience_and_projects_from_pdf
 )
+from app.temp2 import extract_projects_and_experience_from_pdf
 from datetime import datetime
 from unittest.mock import patch
 from flask import url_for 
@@ -1316,7 +1317,60 @@ def test_analyze_resume_missing_text(mocker, resume):
             }
         ] 
     }
-
+    mocker.patch("requests.post", return_value=mocker.Mock(status_code=200, json= lambda: response))
+    respone = analyze_resume(resume)
+    assert response is None
+    
+def test_auto_fill_job_application(resume):
+    profile = extract_projects_and_experience_from_pdf(resume)
+    
+    assert "title" in profile["experience"][0]
+    assert "title" in profile["projects"][0]
+    assert profile["experience"][0]['title'] == "Software Engineer Intern"
+    assert profile["projects"][0]["title"] == "Fake News Detection using NLP"
+    
+def test_auto_fill_handles_missing_fields():
+    partial = {
+        "experience": [],
+        "projects": [
+            {
+                "title": "AI model",
+                "description": ["Built a chatbot"]
+            }
+        ]
+    }
+    application = extract_projects_and_experience_from_pdf(partial)
+    assert len(application["experience"]) == 0
+    assert len(application["projects"]) == 1
+    
+def test_auto_fill_does_not_duplicate_entries(resume):
+    application = extract_projects_and_experience_from_pdf(resume)
+    assert len(application["experience"]) == len(resume["experience"])
+    assert len(application["projects"]) == len(resume["projects"])
+    
+def test_auto_fill_handles_large_resume():
+    resume = {
+        "experience": [{"job_title": f"Engineer {i}", "company": "XYZ Corp", "description": ["Did something"]} for i in range(10)],
+        "projects": [{"title": f"Project {i}", "description": ["Worked on AI"]} for i in range(5)]
+    }
+    application = extract_projects_and_experience_from_pdf(resume)
+    assert len(application["experience"]) == 10
+    assert len(application["projects"]) == 5
+    
+def test_auto_fill_field_format(resume):
+    application = extract_projects_and_experience_from_pdf(resume)
+    assert isinstance(application["experience"], list)
+    assert isinstance(application["projects"], list)
+    assert all(isinstance(exp, dict) for exp in application["experience"])
+    assert all(isinstance(proj, dict) for proj in application["projects"])
+    
+def test_resume_analyzer(path, response):
+    data = extract_projects_and_experience_from_pdf(path)
+    suggestions = analyze_resume(data)
+    assert suggestions is not None
+    assert "Consider adding metrics" in suggestions
+    
+    
 # Test learning feature for Job Seeker
 def test_learning_non_recruiter(client, login_user):
     with client.session_transaction() as session:

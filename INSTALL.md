@@ -21,6 +21,9 @@ Follow the steps below to set up the Campus Job Review System. You can choose to
 ## Setup Groq API Key
 - Obtain an Groq API Key from [here](https://console.groq.com/docs/quickstart). Store the key safely as it cannot be retrieved later.
 
+## Setup Google Gemini API Key
+- Obtain Google Gemini AI model API key from [Google AI Studio](https://aistudio.google.com/prompts/new_chat).
+
 ## Installation with Docker
 
 ### Docker Prerequisites
