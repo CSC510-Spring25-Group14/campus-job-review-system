@@ -17,3 +17,13 @@ pytest-codecov==0.5.0
 werkzeug==2.2.3
 email_validator
 groq
+pdfplumber
+fitz
+dotenv
+google
+transformers
+torch
+langchain_community
+langchain_community
+
+
