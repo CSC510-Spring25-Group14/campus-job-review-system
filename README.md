@@ -123,7 +123,7 @@ https://drive.google.com/file/d/1oAObuweDIOl6X-vy0h5HK-CFmyReeOJx/view?usp=shari
 
 <a id="project-poster"></a>
 ## 📊 Project Poster
-Curious about our project? View our project poster showcasing key aspects of the system [here](https://github.com/CSC510-Spring25-Group14/campus-job-review-system/blob/main/app/static/Project3-Team61-poster.png). **TBD**
+Curious about our project? View our project poster showcasing key aspects of the system [here](app/static/Spring25-Group14-Proj-02-poster.pdf).
 
 ## 🤝 Contribution Guidelines
 The rules listed below are to be followed by the ones who will be contributing to the code in the repository:
@@ -145,7 +145,6 @@ We’re excited about the enhancements coming to the NCSU Campus Jobs Review Sys
 - **Review Validation System:** Implement a system to verify and validate job reviews, ensuring authenticity and reliability for users.
 - **AI-Powered Job Recommendations:** Implement AI to suggest relevant job opportunities to candidates based on their profile, skills, and application history.
 - **Advanced Search on Learning Resources Recommendations:** Upgrade learning Recommendations by adding more filters and enable the user to search for courses on topic they want.
-**TBD** One for each of us.
 
 <a id="contributors"></a>
 ## 🙌 Contributors
