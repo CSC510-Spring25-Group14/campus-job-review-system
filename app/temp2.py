@@ -23,7 +23,7 @@ def extract_projects_and_experience_from_pdf(pdf_path):
     return get_json_from_gemini(resume_text)
 
 def get_json_from_gemini(resume_text):
-    model = genai.GenerativeModel('gemini-1.5-pro')
+    model = genai.GenerativeModel('gemini-pro')
     prompt = f"""
     Given the following resume text, extract the experience and projects sections and format them as a JSON object.
 

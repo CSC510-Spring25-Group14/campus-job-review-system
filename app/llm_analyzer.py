@@ -51,7 +51,7 @@ def extract_experience_and_projects_from_pdf(pdf_path):
     }
 
 def analyze_resume(resume_text):
-    model = genai.GenerativeModel('gemini-1.5-pro')
+    model = genai.GenerativeModel('gemini-pro')
     prompt = (
         f"This is my projects and experience section from resume: {resume_text}. Suggest me where I can improve."
     )

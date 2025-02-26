@@ -10,15 +10,12 @@ from wtforms import (
     TextAreaField,
     DateField,
     SelectField,
-    IntegerField,
-    SelectMultipleField
+    IntegerField
 )
 from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError, URL
 from app.models import User
 
-class JobMatchForm(FlaskForm):
-    job_description = TextAreaField("Job Description", validators=[DataRequired()])
-    submit = SubmitField("Calculate Match")
+
 class RegistrationForm(FlaskForm):
     """Form for user registration."""
 
@@ -99,17 +96,6 @@ class JobApplicationForm(FlaskForm):
         "Status",
         choices=[("applied", "Applied"), ("phone_screen", "Phone Screen"), 
                  ("technical", "Technical"), ("offer", "Offer")],
-        validators=[DataRequired()]
-    )
-    tags = SelectMultipleField(
-        "Tags",
-        choices=[
-            ("Data", "Data"),
-            ("SDE", "SDE"),
-            ("Intern", "Intern"),
-            ("AI", "AI"),
-            ("FullTime", "Full Time")
-        ],
         validators=[DataRequired()]
     )
     submit = SubmitField("Save")
