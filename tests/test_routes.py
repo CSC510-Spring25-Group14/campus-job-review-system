@@ -1468,3 +1468,232 @@ def test_learning_recommendation_with_skills_and_experience():
     recommended_list = json.loads(call_groq_api(file_path, user_experience_summary))
 
     assert 'Python' in ', '.join(str(item) for item in recommended_list)
+
+#Test adding a single tag to a job application
+
+def test_add_single_tag(client, login_user):
+    with client.session_transaction() as session:
+        session['user_id'] = login_user.id
+    
+    response = client.post('/add_job_application', data={
+        'job_link': 'https://example.com/job',
+        'applied_on': '2025-02-25',
+        'last_update_on': '2025-02-25',
+        'status': 'applied',
+        'tags': ['Data']
+    }, follow_redirects=True)
+    
+    assert response.status_code == 200
+    assert b'Data' in response.data
+
+# Test adding multiple tags to a job application
+def test_add_multiple_tags(client, login_user):
+    with client.session_transaction() as session:
+        session['user_id'] = login_user.id
+    
+    response = client.post('/add_job_application', data={
+        'job_link': 'https://example.com/job',
+        'applied_on': '2025-02-25',
+        'last_update_on': '2025-02-25',
+        'status': 'applied',
+        'tags': ['Data', 'SDE', 'AI']
+    }, follow_redirects=True)
+    
+    assert response.status_code == 200
+    assert b'Data' in response.data and b'SDE' in response.data and b'AI' in response.data
+
+# Test filtering job applications by tag
+def test_filter_by_tag(client, login_user):
+    with client.session_transaction() as session:
+        session['user_id'] = login_user.id
+    
+    response = client.get('/application_tracker/filter?tags=Data', follow_redirects=True)
+    
+    assert response.status_code == 200
+    assert b'Data' in response.data
+
+# Test displaying all tags for a job application
+def test_display_all_tags(client, login_user, test_job_applications):
+    with client.session_transaction() as session:
+        session['user_id'] = login_user.id
+    
+    response = client.get('/application_tracker', follow_redirects=True)
+    
+    assert response.status_code == 200
+    for app in test_job_applications:
+        for tag in app.tags:
+            assert tag.name.encode() in response.data
+
+# Test removing a tag from a job application
+def test_remove_tag(client, login_user, test_job_applications):
+    with client.session_transaction() as session:
+        session['user_id'] = login_user.id
+    
+    app = test_job_applications[0]
+    tag_to_remove = app.tags[0].name
+    
+    response = client.post(f'/remove_tag/{app.id}', data={'tag': tag_to_remove}, follow_redirects=True)
+    
+    assert response.status_code == 200
+    assert tag_to_remove.encode() not in response.data
+
+# Test job matching with no experience
+def test_job_match_no_experience(client, login_user):
+    with client.session_transaction() as session:
+        session['user_id'] = login_user.id
+    
+    response = client.post('/calculate_job_match', data={
+        'job_description': 'Entry-level software engineer position'
+    }, follow_redirects=True)
+    
+    assert response.status_code == 200
+    assert b'0%' in response.data
+
+# Test job matching with relevant experience
+def test_job_match_relevant_experience(client, login_user, test_job_experiences):
+    with client.session_transaction() as session:
+        session['user_id'] = login_user.id
+    
+    response = client.post('/calculate_job_match', data={
+        'job_description': 'Experienced software engineer with Python skills'
+    }, follow_redirects=True)
+    
+    assert response.status_code == 200
+    assert b'0%' not in response.data
+
+# Test job matching with irrelevant experience
+def test_job_match_irrelevant_experience(client, login_user, test_job_experiences):
+    with client.session_transaction() as session:
+        session['user_id'] = login_user.id
+    
+    response = client.post('/calculate_job_match', data={
+        'job_description': 'Experienced marketing manager with SEO skills'
+    }, follow_redirects=True)
+    
+    assert response.status_code == 200
+    assert b'0%' in response.data or b'10%' in response.data
+
+# Test job matching with multiple relevant experiences
+def test_job_match_multiple_relevant_experiences(client, login_user, test_job_experiences):
+    with client.session_transaction() as session:
+        session['user_id'] = login_user.id
+    
+    response = client.post('/calculate_job_match', data={
+        'job_description': 'Senior software engineer with experience in web development and data analysis'
+    }, follow_redirects=True)
+    
+    assert response.status_code == 200
+    assert b'50%' in response.data or b'60%' in response.data or b'70%' in response.data
+
+# Test job matching with exact skill match
+def test_job_match_exact_skill_match(client, login_user, test_job_experiences):
+    with client.session_transaction() as session:
+        session['user_id'] = login_user.id
+    
+    response = client.post('/calculate_job_match', data={
+        'job_description': 'Software Engineer with Python and SQL skills'
+    }, follow_redirects=True)
+    
+    assert response.status_code == 200
+    assert b'90%' in response.data or b'100%' in response.data
+
+# Test adding multiple tags to a job application
+def test_add_multiple_tags(client, login_user):
+    with client.session_transaction() as session:
+        session['user_id'] = login_user.id
+    response = client.post('/add_job_application', data={
+        'job_link': 'https://example.com/job',
+        'applied_on': '2025-02-25',
+        'last_update_on': '2025-02-25',
+        'status': 'applied',
+        'tags': ['Data', 'SDE', 'AI']
+    }, follow_redirects=True)
+    assert response.status_code == 200
+    assert b'Data' in response.data and b'SDE' in response.data and b'AI' in response.data
+
+# Test filtering job applications by tag
+def test_filter_by_tag(client, login_user):
+    with client.session_transaction() as session:
+        session['user_id'] = login_user.id
+    response = client.get('/application_tracker/filter?tags=Data', follow_redirects=True)
+    assert response.status_code == 200
+    assert b'Data' in response.data
+
+# Test removing a tag from a job application
+def test_remove_tag(client, login_user, test_job_applications):
+    with client.session_transaction() as session:
+        session['user_id'] = login_user.id
+    app = test_job_applications[0]
+    tag_to_remove = app.tags[0].name
+    response = client.post(f'/remove_tag/{app.id}', data={'tag': tag_to_remove}, follow_redirects=True)
+    assert response.status_code == 200
+    assert tag_to_remove.encode() not in response.data
+
+# Test job matching with no experience
+def test_job_match_no_experience(client, login_user):
+    with client.session_transaction() as session:
+        session['user_id'] = login_user.id
+    response = client.post('/calculate_job_match', data={
+        'job_description': 'Entry-level software engineer position'
+    }, follow_redirects=True)
+    assert response.status_code == 200
+    assert b'0%' in response.data
+
+# Test job matching with relevant experience
+def test_job_match_relevant_experience(client, login_user, test_job_experiences):
+    with client.session_transaction() as session:
+        session['user_id'] = login_user.id
+    response = client.post('/calculate_job_match', data={
+        'job_description': 'Experienced software engineer with Python skills'
+    }, follow_redirects=True)
+    assert response.status_code == 200
+    assert b'0%' not in response.data
+
+# Test job matching with irrelevant experience
+def test_job_match_irrelevant_experience(client, login_user, test_job_experiences):
+    with client.session_transaction() as session:
+        session['user_id'] = login_user.id
+    response = client.post('/calculate_job_match', data={
+        'job_description': 'Experienced marketing manager with SEO skills'
+    }, follow_redirects=True)
+    assert response.status_code == 200
+    assert b'0%' in response.data or b'10%' in response.data
+
+# Test job matching with multiple relevant experiences
+def test_job_match_multiple_relevant_experiences(client, login_user, test_job_experiences):
+    with client.session_transaction() as session:
+        session['user_id'] = login_user.id
+    response = client.post('/calculate_job_match', data={
+        'job_description': 'Senior software engineer with experience in web development and data analysis'
+    }, follow_redirects=True)
+    assert response.status_code == 200
+    assert b'50%' in response.data or b'60%' in response.data or b'70%' in response.data
+
+# Test job matching with exact skill match
+def test_job_match_exact_skill_match(client, login_user, test_job_experiences):
+    with client.session_transaction() as session:
+        session['user_id'] = login_user.id
+    response = client.post('/calculate_job_match', data={
+        'job_description': 'Software Engineer with Python and SQL skills'
+    }, follow_redirects=True)
+    assert response.status_code == 200
+    assert b'90%' in response.data or b'100%' in response.data
+
+# Test adding duplicate tags to a job application
+def test_add_duplicate_tag(client, login_user, test_job_applications):
+    with client.session_transaction() as session:
+        session['user_id'] = login_user.id
+    application_id = test_job_applications[0].id
+    client.post(f"/add_tag/{application_id}", data={"tag": "Python"}, follow_redirects=True)
+    response = client.post(f"/add_tag/{application_id}", data={"tag": "Python"}, follow_redirects=True)
+    assert response.status_code == 200
+    assert b'Tag already exists' in response.data
+
+# Test job matching with special characters in job description
+def test_job_match_special_characters(client, login_user):
+    with client.session_transaction() as session:
+        session['user_id'] = login_user.id
+    special_description = "Software Engineer @#$%^&*()_+"
+    response = client.post('/calculate_job_match', data={'job_description': special_description}, follow_redirects=True)
+    assert response.status_code == 200
+    assert b'match percentage' in response.data.lower()

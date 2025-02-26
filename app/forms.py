@@ -16,7 +16,9 @@ from wtforms import (
 from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError, URL
 from app.models import User
 
-
+class JobMatchForm(FlaskForm):
+    job_description = TextAreaField("Job Description", validators=[DataRequired()])
+    submit = SubmitField("Calculate Match")
 class RegistrationForm(FlaskForm):
     """Form for user registration."""
 

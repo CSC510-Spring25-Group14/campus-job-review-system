@@ -2,11 +2,52 @@ from flask import render_template, request, redirect, flash, url_for, abort, jso
 from flask_login import login_user, current_user, logout_user, login_required
 from app.services.job_fetcher import fetch_job_listings
 from app import app, db, bcrypt
-from app.models import Meetings, Reviews, User, JobApplication, Recruiter_Postings, PostingApplications, JobExperience, Tagfrom app.util import extract_experience_summary, call_groq_api
-
+from app.models import Meetings, Reviews, User, JobApplication, Recruiter_Postings, PostingApplications, JobExperience
+from app.models import Tag
 from app.forms import RegistrationForm, LoginForm, ReviewForm, JobApplicationForm, PostingForm
 from datetime import datetime
 from app.util import extract_experience_summary, call_groq_api
+from app.models import JobExperience
+from app.forms import JobMatchForm
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+
+# Download necessary NLTK data
+nltk.download('punkt')
+nltk.download('stopwords')
+
+@app.route("/calculate_job_match", methods=["POST"])
+@login_required
+def calculate_job_match():
+    form = JobMatchForm()
+    if form.validate_on_submit():
+        job_description = form.job_description.data
+        user_experiences = JobExperience.query.filter_by(username=current_user.username).all()
+        
+        user_profile = " ".join([exp.description for exp in user_experiences])
+        
+        stop_words = set(stopwords.words('english'))
+        
+        def preprocess(text):
+            tokens = word_tokenize(text.lower())
+            return " ".join([word for word in tokens if word.isalnum() and word not in stop_words])
+        
+        processed_job = preprocess(job_description)
+        processed_profile = preprocess(user_profile)
+        
+        vectorizer = TfidfVectorizer()
+        tfidf_matrix = vectorizer.fit_transform([processed_job, processed_profile])
+        similarity = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
+        
+        match_percentage = round(similarity * 100, 2)
+        
+        return render_template("job_profile.html", match_percentage=match_percentage, job_experiences=user_experiences)
+    
+    flash("Invalid form submission. Please try again.", "danger")
+    return redirect(url_for("job_profile"))
 
 app.config["SECRET_KEY"] = "5791628bb0b13ce0c676dfde280ba245"
 

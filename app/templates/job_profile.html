@@ -43,7 +43,7 @@
     <!-- Job Match Percentage Section -->
     <div class="mb-4">
         <h3>Job Match Percentage</h3>
-        <form method="POST" action="{{ url_for('job_match') }}">
+        <form method="POST" action="{{ url_for('calculate_job_match') }}">
             <div class="mb-3">
                 <label for="job_description" class="form-label">Job Description</label>
                 <textarea class="form-control" id="job_description" name="job_description" rows="4" placeholder="Paste the job description here..." required></textarea>
