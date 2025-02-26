@@ -1,13 +1,18 @@
-from flask import render_template, request, redirect, flash, url_for, abort, jsonify
+import os
+from flask import render_template, request, redirect, flash, url_for, abort, jsonify, send_from_directory, current_app
+import pdfplumber
 from flask_login import login_user, current_user, logout_user, login_required
 from app.services.job_fetcher import fetch_job_listings
 from app import app, db, bcrypt
 from app.models import Meetings, Reviews, User, JobApplication, Recruiter_Postings, PostingApplications, JobExperience
 from app.util import extract_experience_summary, call_groq_api
-
+from werkzeug.utils import secure_filename
+from app.resume_processor import extract_experience_and_projects_from_pdf
+from app.llm_analyzer import analyze_resume
 from app.forms import RegistrationForm, LoginForm, ReviewForm, JobApplicationForm, PostingForm
 from datetime import datetime
 from app.util import extract_experience_summary, call_groq_api
+from app.temp2 import extract_projects_and_experience_from_pdf
 
 app.config["SECRET_KEY"] = "5791628bb0b13ce0c676dfde280ba245"
 
@@ -432,6 +437,63 @@ def page_content_post():
 def account():
     return render_template("account.html", title="Account")
 
+UPLOAD_FOLDER = 'app/uploads/resume/'
+ALLOWED_EXTENSIONS = {'pdf'}
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route('/upload_resume', methods=['POST'])
+@login_required
+def upload_resume():
+    if 'resume' not in request.files:
+        flash("No files selected", "danger")
+        return redirect(url_for('account'))
+    
+    file = request.files['resume']
+    
+    if file.filename == '':
+        flash("No selected file", "danger")
+        return redirect(url_for('account'))
+    
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(filepath)
+        current_user.resume = filename
+        db.session.commit()
+
+        flash("Resume uploaded successfully!", "success")
+        return redirect(url_for('account'))
+    
+    flash("Invalid file type. Only PDF and DOCX allowed.", "danger")
+    return redirect(url_for('account'))
+
+@app.route('/uploads/resume/<filename>', methods=["GET"])
+@login_required
+def download_resume(filename):
+    resume_folder = os.path.join(current_app.root_path, "uploads", "resume")
+    return send_from_directory(resume_folder, filename)
+
+@app.route('/resume_analytics', methods=["GET"])
+@login_required
+def resume_analytics():
+    if not current_user.resume:
+        flash("No resume uploaded yet.", "warning")
+        return redirect(url_for("account"))
+    
+    path = os.path.join(app.config["UPLOAD_FOLDER"], current_user.resume)
+    text = extract_experience_and_projects_from_pdf(path)
+    resume_text = f"Experience: {', '.join(text['experience'])}\n\nProjects: {', '.join(text['projects'])}"
+    suggestions = analyze_resume(resume_text)
+    print(type(suggestions))
+    return render_template(
+        'resume_analysis.html',
+        suggestions=suggestions
+    )
 
 @app.route("/api/jobs", methods=["GET"])
 def get_jobs():
@@ -544,7 +606,10 @@ def delete_job_application(application_id):
 @app.route('/job_profile', methods=['GET', 'POST'])
 @login_required
 def job_profile():
-    if request.method == 'POST':
+    job_experiences = JobExperience.query.filter_by(username=current_user.username).all()
+    prefill = None
+    
+    if request.method == 'POST' and 'fill_from_resume' not in request.form:
         # Handle job experience form submission
         job_title = request.form.get('job_title')
         company_name = request.form.get('company_name')
@@ -566,10 +631,22 @@ def job_profile():
         db.session.commit()
         flash('Job experience added successfully!', 'success')
         return redirect(url_for('job_profile'))
+        
+    return render_template('job_profile.html', job_experiences=job_experiences, prefill=prefill)
 
-    # Fetch job experiences for the current user
-    job_experiences = JobExperience.query.filter_by(username=current_user.username).all()
-    return render_template('job_profile.html', job_experiences=job_experiences)
+@app.route('/fill_from_resume', methods=['POST'])
+@login_required
+def fill_from_resume():
+    path = os.path.join(app.config["UPLOAD_FOLDER"], current_user.resume)
+    if path and os.path.exists(path):
+        result = extract_projects_and_experience_from_pdf(path)
+        print(result)
+        if result and 'experience' in result:
+            return jsonify(result)
+        else:
+            return jsonify({'error': 'Failed to extract data'}), 500
+    else:
+        return jsonify({'error': 'Please upload resume first.'}), 400
 
 @app.route('/schedule_meeting/<string:applicant_username>', methods=['POST'])
 @login_required

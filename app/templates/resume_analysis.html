@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>Resume Content</h2>
+
+<h2>AI-Powered Improvement Suggestions</h2>
+<p>{{ suggestions }}</p>
+
+<a href="{{ url_for('download_resume', filename=current_user.resume) }}" class="btn btn-success">Download Resume</a>
+
+
+{% endblock content %}
