@@ -24,6 +24,6 @@ google
 transformers
 torch
 langchain_community
-langchain_community
+langchain
 
 
