@@ -5,7 +5,8 @@ from flask_login import login_user, current_user, logout_user, login_required
 from app.services.job_fetcher import fetch_job_listings
 from app import app, db, bcrypt
 from app.models import Meetings, Reviews, User, JobApplication, Recruiter_Postings, PostingApplications, JobExperience
-from app.models import Tagfrom werkzeug.utils import secure_filename
+from app.models import Tag
+from werkzeug.utils import secure_filename
 from app.resume_processor import extract_experience_and_projects_from_pdf
 from app.llm_analyzer import analyze_resume
 from app.forms import RegistrationForm, LoginForm, ReviewForm, JobApplicationForm, PostingForm
