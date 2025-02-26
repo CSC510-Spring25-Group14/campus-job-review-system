@@ -40,10 +40,10 @@ Finding a job on campus can be overwhelming. Students often rely on word-of-mout
 - **Job Experience Sharing:** Candidates can add details about their job experiences, helping peers make informed decisions with real-world insights.
 - **Interview Scheduling:** Recruiters can schedule interviews with candidates directly through the platform, providing updates that candidates can view and manage.
 - **AI Recommendation for Shortlisting Applicants:** With AI, Recruiters can order applicants based on relevance to the job posting.
+- **Tags for Applications to enable faster tracking:** With this featuer, a job seeker can attach multiple tags to their application, to group them accordingly. 
 - **AI Recommendation for Learning Resources:** Now, any user h a list of AI-suggested learning resources based on their skills and experiences. 
 - **AI Powered Resume Suggestions:** Once a job seeker uploads their resume on the portal, suggestions are provided to the person regarding improvements in the experience and projects section.
 - **Auto-Fill Job Profile from Resume:** Once the resume is uploaded on the database, the job seeker is provided with the functionality of auto-filling the job profile section directly from the resume saving time.
-
 
 By fostering transparency and collaboration, our platform empowers students to navigate the campus job market confidently.
 
@@ -125,7 +125,7 @@ Check out our demo video to see the application in action! Click the link below 
 
 <a id="project-poster"></a>
 ## 📊 Project Poster
-Curious about our project? View our project poster showcasing key aspects of the system [here](https://github.com/CSC510-Spring25-Group14/campus-job-review-system/blob/main/app/static/Project3-Team61-poster.png). **TBD**
+Curious about our project? View our project poster showcasing key aspects of the system [here](app/static/Spring25-Group14-Proj-02-poster.pdf).
 
 ## 🤝 Contribution Guidelines
 The rules listed below are to be followed by the ones who will be contributing to the code in the repository:
@@ -148,6 +148,7 @@ We’re excited about the enhancements coming to the NCSU Campus Jobs Review Sys
 - **AI-Powered Job Recommendations:** Implement AI to suggest relevant job opportunities to candidates based on their profile, skills, and application history.
 - **Advanced Search on Learning Resources Recommendations:** Upgrade learning Recommendations by adding more filters and enable the user to search for courses on topic they want.
 - **Resume score:** Implement an algorithm to analyze the entire resume text and generate a score out of 100 based on the content of the resume highlighting specific areas where the person lost the score
+
 
 <a id="contributors"></a>
 ## 🙌 Contributors
