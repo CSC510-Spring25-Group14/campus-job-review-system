@@ -25,25 +25,16 @@ jobs:
         run: |
           pip install --upgrade pip && pip install -r requirements.txt
           python -m pip install --upgrade pip
-          pip install pytest pytest-cov
+          pip install pytest coverage
       
       - name: Test with pytest
         run: |
-          pytest --cov --junitxml=junit.xml
+          coverage run -m pytest tests/
         continue-on-error: true
 
-      - name: Run code coverage
-        run: pytest --cov=app --cov-branch --cov-report=xml
-        continue-on-error: true
-      
-      - name: Upload test results to Codecov
-        if: ${{ !cancelled() }}
-        uses: codecov/test-results-action@v1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-
-      - name: Upload code coverage reports to Codecov
+      - name: Upload coverage reports to Codecov
         if: ${{ !cancelled() }}  
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
