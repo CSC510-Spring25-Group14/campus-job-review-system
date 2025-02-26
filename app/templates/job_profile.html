@@ -10,6 +10,7 @@
     <div class="mb-4">
         <h3>Add Job Experience</h3>
         <form method="POST" action="{{ url_for('job_profile') }}">
+            <button type="button" id="fillFromResume" class="btn btn-primary">Fill From Resume</button>
             <div class="mb-3">
                 <label for="job_title" class="form-label">Job Title</label>
                 <input type="text" class="form-control" id="job_title" name="job_title" placeholder="e.g., Software Engineer" required>
@@ -80,4 +81,28 @@
     </div>
 </div>
 
+<script>
+    document.getElementById('fillFromResume').addEventListener('click', function(e) {
+        e.preventDefault();
+        fetch('/fill_from_resume', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log(data);
+            if (data && data.experience && data.experience[0]) {
+                const experience = data.experience[0];
+                document.getElementById('job_title').value = experience.title;
+                document.getElementById('company_name').value = experience.company;
+                document.getElementById('duration').value = experience.duration;
+                document.getElementById('description').value = experience.description;
+            } else {
+                alert('Failed to pre-fill from resume');
+            }
+        })
+    })
+</script>
 {% endblock content %}

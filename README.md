@@ -4,7 +4,6 @@
 [![DOI](https://zenodo.org/badge/930604949.svg)](https://doi.org/10.5281/zenodo.14921888)
 [![License](https://img.shields.io/github/license/CSC510-Spring25-Group14/campus-job-review-system)](https://github.com/CSC510-Spring25-Group14/campus-job-review-system/blob/main/LICENSE)
 [![GitHub Release](https://img.shields.io/github/release/CSC510-Spring25-Group14/campus-job-review-system.svg)](https://github.com/CSC510-Spring25-Group14/campus-job-review-system/releases)
-**TBD** 
 [![codecov](https://codecov.io/github/CSC510-Spring25-Group14/campus-job-review-system/graph/badge.svg?token=87U5O7TFHY)](https://codecov.io/github/CSC510-Spring25-Group14/campus-job-review-system)
 [![Build main](https://github.com/CSC510-Spring25-Group14/campus-job-review-system/actions/workflows/check-commits.yml/badge.svg)](https://github.com/CSC510-Spring25-Group14/campus-job-review-system/actions/workflows/check-commits.yml)
 [![Open Issues](https://img.shields.io/github/issues/CSC510-Spring25-Group14/campus-job-review-system)](https://github.com/CSC510-Spring25-Group14/campus-job-review-system/issues)
@@ -41,7 +40,7 @@ Finding a job on campus can be overwhelming. Students often rely on word-of-mout
 - **Job Experience Sharing:** Candidates can add details about their job experiences, helping peers make informed decisions with real-world insights.
 - **Interview Scheduling:** Recruiters can schedule interviews with candidates directly through the platform, providing updates that candidates can view and manage.
 - **AI Recommendation for Shortlisting Applicants:** With AI, Recruiters can order applicants based on relevance to the job posting.
-- **AI Recommendation for Learning Resources:** Now, any user h a list of AI-suggested learning resources based on their skills and experiences. 
+- **AI Recommendation for Learning Resources:** Now, any user has a list of AI-suggested learning resources based on their skills and experiences. 
 - **TBD**
 
 By fostering transparency and collaboration, our platform empowers students to navigate the campus job market confidently.
@@ -135,8 +134,6 @@ The rules listed below are to be followed by the ones who will be contributing t
 
 <a id="code-coverage"></a>
 ## 📈 Code Coverage
-
-**TBD**
 
 [![codecov](https://codecov.io/github/CSC510-Spring25-Group14/campus-job-review-system/graph/badge.svg?token=ZGE7LGPUGY)](https://codecov.io/github/CSC510-Spring25-Group14/campus-job-review-system) It is part of the [Github Workflow Build](https://github.com/CSC510-Spring25-Group14/campus-job-review-system/actions/workflows/code_coverage.yml)
 
